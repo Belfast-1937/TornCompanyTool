@@ -2,9 +2,10 @@ import platform
 import requests
 
 
-VERSION = "1.1"
+VERSION = "1.2"
 # 2026-05-10: v1.0 发布
 # 2026-05-14: v1.1 发布 - 增加 Xanax 统计和 30 日平均计算，优化日志记录和用户提示，拆分文件结构，增强代码可读性和维护性
+# 2026-05-14: v1.2 发布 - 增加 Reheb 统计和 自定义日Xanax及Reheb平均计算，增加行业信息，增加日志记录，更新配置文件模板
 
 
 # Xanax 相关配置
@@ -21,9 +22,11 @@ EMPLOYEE_DB_PATH = f"{DATABASE_DIR}/EmployeeDB.xlsx"
 HISTORY_DB_PATH = f"{DATABASE_DIR}/HistoryDB.xlsx"
 STOCK_DB_PATH = f"{DATABASE_DIR}/StockDB.xlsx"
 USER_PERK_DB_PATH = f"{DATABASE_DIR}/UserPerkDB.xlsx"
+INDUSTRY_DB_PATH = f"{DATABASE_DIR}/IndustryDB.xlsx"
 
 REPORT_DIR = './Report'
 EFFICIENCY_REPORT_PATH = f"{REPORT_DIR}/Company_Efficiency_Report.xlsx"
+
 
 
 # ==================== 股票字典 ====================
@@ -51,6 +54,49 @@ EDUCATION_MAP = {
     100: (100, "LAW2100", "LAW2100 Media Law", "Gain an increase in advertising effectiveness for your company", "Advertising"),
     22: (22, "MTH1220", "MTH1220 Introduction to Mathematics", "Basic", None),
     28: (28, "MTH2280", "MTH2280 Probability", "Gain 1% productivity for your company", "Productivity"),
+}
+
+# ==================== 行业字典 ===================
+INDUSTRY_MAP = {
+    1: "Hair Salon",
+    2: "Law Firm",
+    3: "Flower Shop",
+    4: "Car Dealership",
+    5: "Clothing Store",
+    6: "Gun Shop",
+    7: "Game Shop",
+    8: "Candle Shop",
+    9: "Toy Shop",
+    10: "Adult Novelties",
+    11: "Cyber Cafe",
+    12: "Grocery Store",
+    13: "Theater",
+    14: "Sweet Shop",
+    15: "Cruise Line",
+    16: "Television Network",
+    18: "Zoo",
+    19: "Firework Stand",
+    20: "Property Broker",
+    21: "Furniture Store",
+    22: "Gas Station",
+    23: "Music Store",
+    24: "Nightclub",
+    25: "Pub",
+    26: "Gents Strip Club",
+    27: "Restaurant",
+    28: "Oil Rig",
+    29: "Fitness Center",
+    30: "Mechanic Shop",
+    31: "Amusement Park",
+    32: "Lingerie Store",
+    33: "Meat Warehouse",
+    34: "Farm",
+    35: "Software Corporation",
+    36: "Ladies Strip Club",
+    37: "Private Security Firm",
+    38: "Mining Corporation",
+    39: "Detective Agency",
+    40: "Logistics Management"
 }
 
 

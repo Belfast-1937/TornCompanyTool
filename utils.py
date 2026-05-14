@@ -9,7 +9,7 @@ from functools import wraps
 
 from config import VERSION, DATABASE_DIR, \
     EMPLOYEE_DB_PATH, HISTORY_DB_PATH, STOCK_DB_PATH, \
-    USER_PERK_DB_PATH, EFFICIENCY_REPORT_PATH
+    USER_PERK_DB_PATH, EFFICIENCY_REPORT_PATH, INDUSTRY_DB_PATH
 
 def file_access_handler(func):
     """装饰器：处理 Excel 文件被占用"""
@@ -44,7 +44,7 @@ def print_startup_info():
     print(f"🚀 Torn Company 数据自动化记录工具 v{VERSION}")
     print("-" * 60)
     print("📢 运行须知：")
-    print("1. [配置读取] 本程序优先从同级目录下的 'Company.ini' 读取UserID、CompanyID、ApiKey。")
+    print("1. [配置读取] 本程序优先从同级目录下的 'Company.ini' 读取UserID、CompanyID、ApiKey、IndustryID。")
     print(f"2. [数据安全] ‼️ 请勿删除或移动 '{DATABASE_DIR}' 文件夹内的任何文件。")
     print("3. [后果说明] ‼️ 数据库文件一旦丢失，所有历史记录将清空且无法恢复。")
     print("4. [记录内容] 本次运行将记录以下数据：")
@@ -52,6 +52,7 @@ def print_startup_info():
     print(f"   • 历史效率趋势 → {HISTORY_DB_PATH}")
     print(f"   • 公司库存快照 → {STOCK_DB_PATH}")
     print(f"   • 股票&教育加成 → {USER_PERK_DB_PATH}")
+    print(f"   • 行业公司列表 → {INDUSTRY_DB_PATH}")
     print(f"5. [报表输出] 效率横向对比报表 → {EFFICIENCY_REPORT_PATH}")
     print("=" * 60 + "\n")
 

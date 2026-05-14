@@ -49,29 +49,16 @@ def fetch_company_data(company_id, api_key):
     return fetch_with_retry(url)
 
 
+def fetch_industry_data(industry_id, api_key):
+    url = f"https://api.torn.com/company/{industry_id}?selections=companies&key={api_key}"
+    return fetch_with_retry(url)
+
+
 def fetch_user_data(user_id, api_key):
     url = f"https://api.torn.com/user/{user_id}?selections=education,stocks&key={api_key}"
     return fetch_with_retry(url)
 
 
-def fetch_xantaken(user_id, api_key, max_retries=5):
-    """获取单个用户 xantaken"""
-    url = f"https://api.torn.com/user/{user_id}?selections=personalstats&key={api_key}"
-    session = get_session()
-
-    for attempt in range(1, max_retries + 1):
-        try:
-            resp = session.get(url, timeout=12)
-            resp.raise_for_status()
-            data = resp.json()
-            if 'error' in data:
-                if data['error'].get('code') == 5:
-                    time.sleep(65)
-                    continue
-                return 0
-            return data.get('personalstats', {}).get('xantaken', 0)
-        except Exception:
-            if attempt == max_retries:
-                return 0
-            time.sleep(8)
-    return 0
+def fetch_employee_data(employee_id, api_key):
+    url = f"https://api.torn.com/user/{employee_id}?selections=personalstats&key={api_key}"
+    return fetch_with_retry(url)

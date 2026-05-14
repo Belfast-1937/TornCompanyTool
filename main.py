@@ -7,13 +7,13 @@ import configparser
 
 from config import DATABASE_DIR, REPORT_DIR, \
     EMPLOYEE_DB_PATH, HISTORY_DB_PATH, STOCK_DB_PATH, \
-    USER_PERK_DB_PATH, EFFICIENCY_REPORT_PATH
+    USER_PERK_DB_PATH, EFFICIENCY_REPORT_PATH, INDUSTRY_DB_PATH
 
 from logger import setup_logger
 from utils import file_access_handler, get_script_dir, print_startup_info, check_network
-from api_client import fetch_company_data, fetch_user_data
+from api_client import fetch_company_data, fetch_user_data, fetch_industry_data
 from data_processor import (get_employees, get_company_detailed, get_latest_gross_income,
-                            get_company_stock, add_xan_stats, get_xan_day_avg, parse_user_perks)
+                            get_company_stock, parse_xan_rehab_stats, calculate_stat_day_avg, parse_user_perks, get_industry_companies)
 from excel_handler import save_to_excel, generate_horizontal_report
 
 
@@ -38,17 +38,18 @@ def get_config():
             cid = config.get('Settings', 'CompanyID').strip()
             key = config.get('Settings', 'ApiKey').strip()
             uid = config.get('Settings', 'UserID').strip()
+            iid = config.get('Settings', 'IndustryID').strip()
 
-            if "Your_" in cid or "Your_" in key or "Your_" in uid:
+            if "Your_" in cid or "Your_" in key or "Your_" in uid or "Your_" in iid:
                 logging.warning("配置文件中仍包含默认占位符")
                 print("⚠️  警告: 检测到配置内仍是默认占位符，请修改 Company.ini。")
-                return None, None, None
-            return cid, key, uid
+                return None, None, None, None
+            return cid, key, uid, iid
         except Exception as e:
             logging.error(f"读取 Company.ini 出错: {e}")
     else:
         logging.info("未找到 Company.ini，将进入手动输入模式。")
-    return None, None, None
+    return None, None, None, None
 
 
 def main():
@@ -70,14 +71,15 @@ def main():
     for folder in [DATABASE_DIR, REPORT_DIR]:
         os.makedirs(folder, exist_ok=True)
 
-    cid, key, user_id = get_config()
-    if not all([cid, key, user_id]):
+    cid, key, user_id, industry_id = get_config()
+    if not all([cid, key, user_id, industry_id]):
         print("💡 未能通过配置文件自动登录，请手动输入：")
         user_id = input("请输入 User ID: ")
         cid = input("请输入 Company ID: ")
         key = input("请输入 API Key: ")
+        industry_id = input("请输入 Industry ID: ")
 
-    if not all([cid, key, user_id]):
+    if not all([cid, key, user_id, industry_id]):
         logging.error("缺少必要参数，程序退出")
         print("❌ 错误：缺少参数，10秒后程序退出。")
         time.sleep(10)
@@ -92,12 +94,19 @@ def main():
         time.sleep(10)
         return
 
-    logging.info(f"开始获取用户数据 (User ID: {user_id})")
+    logging.info(f"开始获取用户股票与教育数据 (User ID: {user_id})")
     print(f"📡 正在获取用户股票与教育数据 (User ID: {user_id})...")
     user_res = fetch_user_data(user_id, key)
     if "error" in user_res:
         print(f"⚠️ 用户数据获取失败: {user_res.get('error')}")
         logging.warning(f"用户数据获取失败: {user_res.get('error')}")
+
+    logging.info(f"开始处理行业数据 (Industry ID: {industry_id})")
+    print(f"📡 正在获取行业数据 (Industry ID: {industry_id})...")
+    industry_res = fetch_industry_data(industry_id, key)
+    if "error" in industry_res:
+        print(f"⚠️ 行业数据获取失败: {industry_res.get('error')}")
+        logging.warning(f"行业数据获取失败: {industry_res.get('error')}")
 
     df_emp = get_employees(company_res)
     df_inc = get_latest_gross_income(company_res)
@@ -165,9 +174,14 @@ def main():
 
     sheet_name_str = today_date.strftime("%Y-%m-%d")
 
-    df_emp = add_xan_stats(df_emp, key)
-    df_emp = get_xan_day_avg(
-        df_emp, today_date, EMPLOYEE_DB_PATH)
+    df_emp = parse_xan_rehab_stats(df_emp, key)
+    logging.info("员工 Xanax 和 Rehabs 数据已获取并解析完成")
+    df_emp = calculate_stat_day_avg(
+        df_emp, today_date, EMPLOYEE_DB_PATH, 'xantaken')
+    logging.info("员工 Xanax 日均增长数据已计算完成")
+    df_emp = calculate_stat_day_avg(
+        df_emp, today_date, EMPLOYEE_DB_PATH, 'rehabs')
+    logging.info("员工 Rehabs 日均增长数据已计算完成")
     save_to_excel(EMPLOYEE_DB_PATH, df_emp, sheet_name_str)
     if not df_stock.empty:
         save_to_excel(STOCK_DB_PATH, df_stock, sheet_name_str)
@@ -176,6 +190,10 @@ def main():
     user_file = USER_PERK_DB_PATH
     df_perks = parse_user_perks(user_res)
     save_to_excel(user_file, df_perks, sheet_name_str, header=False)
+
+    df_industry = get_industry_companies(industry_res)
+    if not df_industry.empty:
+        save_to_excel(INDUSTRY_DB_PATH, df_industry, sheet_name_str)
 
     generate_horizontal_report(
         HISTORY_DB_PATH, EFFICIENCY_REPORT_PATH, today_date)

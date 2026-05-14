@@ -4,7 +4,7 @@ import pandas as pd
 import re
 from datetime import datetime
 
-from api_client import fetch_xantaken
+from api_client import fetch_employee_data
 from config import MAX_XAN_DAYS, STOCK_MAP, EDUCATION_MAP
 
 
@@ -64,90 +64,50 @@ def get_company_stock(response):
     return pd.DataFrame(rows)
 
 
-def add_xan_stats(df_emp, api_key):
-    if df_emp.empty:
-        return df_emp
+def get_employee_personalstats(response):
+    """解析 personalstats 返回值"""
+    if not response or "error" in response:
+        return {"xantaken": 0, "rehabs": 0}
 
-    print("📊 正在获取员工 Xanax 服用记录...")
-    logging.info("开始获取员工  Xanax 服用数据")
-
-    xan_list = []
-    for idx, row in df_emp.iterrows():
-        xan = fetch_xantaken(int(row['EmployeeID']), api_key)
-        xan_list.append(xan)
-        if (idx + 1) % 10 == 0:
-            print(f"   已处理 {idx+1}/{len(df_emp)} 名员工...")
-
-    df_emp = df_emp.copy()
-    df_emp['xantaken'] = xan_list
-    print(f"✅ Xanax 当日数据获取完成！")
-    return df_emp
+    personalstats = response.get('personalstats', {})
+    return {
+        "xantaken": personalstats.get('xantaken', 0),
+        "rehabs": personalstats.get('rehabs', 0)
+    }
 
 
-def get_xan_day_avg(df_emp, today_date, employee_db_path):
-    """计算近x日 Xanax 日均"""
-    xan_key = "xan_{}day_avg".format(MAX_XAN_DAYS)
-    if df_emp.empty or 'xantaken' not in df_emp.columns:
-        df_emp[xan_key] = "N/A"
-        return df_emp
+def get_industry_companies(response):
+    """提取指定行业内的公司数据"""
+    companies = response.get('company', {})
+    if not companies:
+        logging.warning("未获取到 companies 数据")
+        return pd.DataFrame()
 
-    try:
-        if not os.path.exists(employee_db_path):
-            df_emp[xan_key] = "N/A"
-            return df_emp
+    rows = []
+    for cid, info in companies.items():
+        rows.append({
+            'CompanyID': int(cid),
+            'Name': info.get('name', 'Unknown'),
+            'Director': info.get('director'),
+            'Stars': info.get('rating', 0),
+            'Daily_Income': info.get('daily_income', 0),
+            'Weekly_Income': info.get('weekly_income', 0),
+            'Daily_Customers': info.get('daily_customers', 0),
+            'Weekly_Customers': info.get('weekly_customers', 0),
+            'Employees_Hired': info.get('employees_hired', 0),
+            'Employees_Capacity': info.get('employees_capacity', 0),
+            'Days_Old': info.get('days_old', 0),
+        })
 
-        xls = pd.ExcelFile(employee_db_path)
-        history = {}
+    df = pd.DataFrame(rows)
 
-        for sheet in xls.sheet_names:
-            try:
-                sheet_date = pd.to_datetime(sheet).date()
-                if sheet_date >= today_date.date():
-                    continue
-                df = pd.read_excel(xls, sheet_name=sheet)
-                if 'EmployeeID' in df.columns and 'xantaken' in df.columns:
-                    history[sheet_date] = dict(
-                        zip(df['EmployeeID'].astype(int), df['xantaken']))
-            except:
-                continue
+    # 按周收入降序排序并添加排名
+    if not df.empty:
+        df = df.sort_values(by='Weekly_Income',
+                            ascending=False).reset_index(drop=True)
+        df['Rank'] = df.index + 1
 
-        avg_list = []
-        today = today_date.date() if isinstance(today_date, datetime) else today_date
-
-        for _, row in df_emp.iterrows():
-            emp_id = int(row['EmployeeID'])
-            current = int(row['xantaken'])
-            past_dates = sorted([d for d in history if d < today], reverse=True)[
-                :MAX_XAN_DAYS]
-
-            if not past_dates:
-                avg_list.append("N/A")
-                continue
-
-            total_inc = 0
-            valid_days = 0
-            prev = current
-
-            for d in past_dates:
-                prev_val = history[d].get(emp_id)
-                if prev_val is not None:
-                    inc = prev - prev_val
-                    if inc >= 0:
-                        total_inc += inc
-                        valid_days += 1
-                    prev = prev_val
-
-            avg_list.append(round(total_inc / valid_days, 2)
-                            if valid_days > 0 else "N/A")
-
-        df_emp = df_emp.copy()
-        df_emp[xan_key] = avg_list
-        return df_emp
-
-    except Exception as e:
-        logging.error(f"计算{MAX_XAN_DAYS}日平均失败: {e}")
-        df_emp[xan_key] = "N/A"
-        return df_emp
+    return df
 
 
 # === User_Perks 解析函数 ===
@@ -228,3 +188,110 @@ def parse_user_perks(user_data):
         rows.append([code, effect, ''])
 
     return pd.DataFrame(rows)
+
+
+def parse_xan_rehab_stats(df_emp, api_key):
+    """同时获取每个员工的 Xanax 和 Rehabs 数据"""
+    if df_emp.empty:
+        return df_emp
+
+    print("📊 正在获取员工 Xanax & Rehabs 记录...")
+    logging.info("开始批量获取员工 Xanax 和 Rehabs 数据")
+
+    xan_list = []
+    rehab_list = []
+
+    for idx, row in df_emp.iterrows():
+        emp_id = int(row['EmployeeID'])
+        response = fetch_employee_data(emp_id, api_key)
+        stats = get_employee_personalstats(response)
+
+        xan_list.append(stats["xantaken"])
+        rehab_list.append(stats["rehabs"])
+
+        if (idx + 1) % 8 == 0:   # 适当增加提示频率
+            print(f"   已处理 {idx+1}/{len(df_emp)} 名员工...")
+
+    df_emp = df_emp.copy()
+    df_emp['xantaken'] = xan_list
+    df_emp['rehabs'] = rehab_list
+
+    print(f"✅ Xanax & Rehabs 当日数据获取完成！（共 {len(df_emp)} 人）")
+    return df_emp
+
+
+def calculate_stat_day_avg(df_emp, today_date, employee_db_path, stat_column, days=None):
+    """
+    通用函数：计算某项统计数据的近 N 日日均增长
+
+    参数:
+        stat_column: 要计算的列名（如 'xantaken' 或 'rehabs'）
+        days: 计算天数，默认使用 MAX_XAN_DAYS
+    """
+    if days is None:
+        days = MAX_XAN_DAYS
+
+    avg_key = f"{stat_column}_{days}day_avg"
+
+    if df_emp.empty or stat_column not in df_emp.columns:
+        df_emp[avg_key] = "N/A"
+        return df_emp
+
+    try:
+        if not os.path.exists(employee_db_path):
+            df_emp[avg_key] = "N/A"
+            return df_emp
+
+        xls = pd.ExcelFile(employee_db_path)
+        history = {}
+
+        for sheet in xls.sheet_names:
+            try:
+                sheet_date = pd.to_datetime(sheet).date()
+                if sheet_date >= today_date.date():
+                    continue
+                df = pd.read_excel(xls, sheet_name=sheet)
+                if 'EmployeeID' in df.columns and stat_column in df.columns:
+                    history[sheet_date] = dict(
+                        zip(df['EmployeeID'].astype(int), df[stat_column]))
+            except:
+                continue
+
+        avg_list = []
+        today = today_date.date() if isinstance(today_date, datetime) else today_date
+
+        for _, row in df_emp.iterrows():
+            emp_id = int(row['EmployeeID'])
+            current = int(row.get(stat_column, 0))
+
+            past_dates = sorted(
+                [d for d in history if d < today], reverse=True)[:days]
+
+            if not past_dates:
+                avg_list.append("N/A")
+                continue
+
+            total_inc = 0
+            valid_days = 0
+            prev = current
+
+            for d in past_dates:
+                prev_val = history[d].get(emp_id)
+                if prev_val is not None:
+                    inc = prev - prev_val
+                    if inc >= 0:
+                        total_inc += inc
+                        valid_days += 1
+                    prev = prev_val
+
+            avg_list.append(round(total_inc / valid_days, 2)
+                            if valid_days > 0 else "N/A")
+
+        df_emp = df_emp.copy()
+        df_emp[avg_key] = avg_list
+        return df_emp
+
+    except Exception as e:
+        logging.error(f"计算 {stat_column} {days}日平均失败: {e}")
+        df_emp[avg_key] = "N/A"
+        return df_emp
