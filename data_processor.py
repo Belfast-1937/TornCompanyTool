@@ -67,12 +67,12 @@ def get_company_stock(response):
 def get_employee_personalstats(response):
     """解析 personalstats 返回值"""
     if not response or "error" in response:
-        return {"xantaken": 0, "rehabs": 0}
+        return {"xantaken": 0, "switravel": 0}
 
     personalstats = response.get('personalstats', {})
     return {
         "xantaken": personalstats.get('xantaken', 0),
-        "rehabs": personalstats.get('rehabs', 0)
+        "switravel": personalstats.get('switravel', 0)
     }
 
 
@@ -190,43 +190,39 @@ def parse_user_perks(user_data):
     return pd.DataFrame(rows)
 
 
-def parse_xan_rehab_stats(df_emp, api_key):
-    """同时获取每个员工的 Xanax 和 Rehabs 数据"""
+def parse_empolyee_stats(df_emp, api_key):
+    """同时获取每个员工的 Xanax 和 去瑞士次数"""
     if df_emp.empty:
         return df_emp
 
-    print("📊 正在获取员工 Xanax & Rehabs 记录...")
-    logging.info("开始批量获取员工 Xanax 和 Rehabs 数据")
+    print("📊 正在获取员工 Xanax & 去瑞士次数...")
+    logging.info("开始批量获取员工 Xanax 和 switravel 数据")
 
     xan_list = []
-    rehab_list = []
+    swiss_list = []
 
     for idx, row in df_emp.iterrows():
         emp_id = int(row['EmployeeID'])
-        response = fetch_employee_data(emp_id, api_key)
+        response = fetch_employee_data(emp_id, api_key)   # 或 fetch_personalstats
         stats = get_employee_personalstats(response)
 
         xan_list.append(stats["xantaken"])
-        rehab_list.append(stats["rehabs"])
+        swiss_list.append(stats["switravel"])
 
-        if (idx + 1) % 8 == 0:   # 适当增加提示频率
+        if (idx + 1) % 8 == 0:
             print(f"   已处理 {idx+1}/{len(df_emp)} 名员工...")
 
     df_emp = df_emp.copy()
     df_emp['xantaken'] = xan_list
-    df_emp['rehabs'] = rehab_list
+    df_emp['switravel'] = swiss_list   # 新列名
 
-    print(f"✅ Xanax & Rehabs 当日数据获取完成！（共 {len(df_emp)} 人）")
+    print(f"✅ Xanax & 去瑞士次数 获取完成！（共 {len(df_emp)} 人）")
     return df_emp
 
 
 def calculate_stat_day_avg(df_emp, today_date, employee_db_path, stat_column, days=None):
     """
-    通用函数：计算某项统计数据的近 N 日日均增长
-
-    参数:
-        stat_column: 要计算的列名（如 'xantaken' 或 'rehabs'）
-        days: 计算天数，默认使用 MAX_XAN_DAYS
+    计算近 N 日平均增长 - 已修复日期比较 Bug
     """
     if days is None:
         days = MAX_XAN_DAYS
@@ -239,59 +235,84 @@ def calculate_stat_day_avg(df_emp, today_date, employee_db_path, stat_column, da
 
     try:
         if not os.path.exists(employee_db_path):
+            logging.warning(f"EmployeeDB 文件不存在: {employee_db_path}")
             df_emp[avg_key] = "N/A"
             return df_emp
 
         xls = pd.ExcelFile(employee_db_path)
         history = {}
 
-        for sheet in xls.sheet_names:
+        # 统一处理 today_date 为 date 对象
+        today = today_date.date() if isinstance(today_date, datetime) else today_date
+
+        logging.info(
+            f"正在加载历史数据... 目标日期: {today} (共 {len(xls.sheet_names)} 个 Sheet)")
+
+        for sheet in sorted(xls.sheet_names, reverse=True):
             try:
                 sheet_date = pd.to_datetime(sheet).date()
-                if sheet_date >= today_date.date():
+
+                if sheet_date >= today:
+                    logging.debug(f"跳过当天或未来 Sheet: {sheet}")
                     continue
+
                 df = pd.read_excel(xls, sheet_name=sheet)
                 if 'EmployeeID' in df.columns and stat_column in df.columns:
                     history[sheet_date] = dict(
-                        zip(df['EmployeeID'].astype(int), df[stat_column]))
-            except:
-                continue
+                        zip(df['EmployeeID'].astype(int), df[stat_column].astype(int)))
+                    logging.info(f"✓ 已加载历史 Sheet: {sheet}")
+            except Exception as e:
+                logging.warning(f"读取 Sheet {sheet} 失败: {e}")
+
+        if not history:
+            logging.warning("没有找到任何有效历史数据")
+            df_emp[avg_key] = "N/A"
+            return df_emp
+
+        logging.info(f"成功加载 {len(history)} 天历史数据: {sorted(history.keys())}")
 
         avg_list = []
-        today = today_date.date() if isinstance(today_date, datetime) else today_date
+        sorted_dates = sorted(history.keys(), reverse=True)   # 从新到旧排序
 
         for _, row in df_emp.iterrows():
             emp_id = int(row['EmployeeID'])
             current = int(row.get(stat_column, 0))
 
-            past_dates = sorted(
-                [d for d in history if d < today], reverse=True)[:days]
-
-            if not past_dates:
+            if not sorted_dates:
                 avg_list.append("N/A")
                 continue
 
-            total_inc = 0
-            valid_days = 0
-            prev = current
+            # 确定参考日期
+            if len(sorted_dates) >= days:
+                ref_date = sorted_dates[days - 1]
+            else:
+                ref_date = sorted_dates[-1]  # 最旧的一天
 
-            for d in past_dates:
-                prev_val = history[d].get(emp_id)
-                if prev_val is not None:
-                    inc = prev - prev_val
-                    if inc >= 0:
-                        total_inc += inc
-                        valid_days += 1
-                    prev = prev_val
+            prev_val = history[ref_date].get(emp_id)
 
-            avg_list.append(round(total_inc / valid_days, 2)
-                            if valid_days > 0 else "N/A")
+            if prev_val is None:
+                avg_list.append("N/A")
+                continue
+
+            total_inc = current - prev_val
+            actual_days = (today - ref_date).days
+
+            if actual_days > 0:
+                avg = round(total_inc / actual_days, 2)
+                result = avg if total_inc >= 0 else "N/A"
+                avg_list.append(result)
+            else:
+                avg_list.append("N/A")
 
         df_emp = df_emp.copy()
         df_emp[avg_key] = avg_list
+
+        logging.info(f"✅ {stat_column} {days}日平均计算完成")
         return df_emp
 
     except Exception as e:
-        logging.error(f"计算 {stat_column} {days}日平均失败: {e}")
+        logging.error(f"计算 {stat_column} 日均失败: {e}")
+        import traceback
+        logging.error(traceback.format_exc())
         df_emp[avg_key] = "N/A"
         return df_emp

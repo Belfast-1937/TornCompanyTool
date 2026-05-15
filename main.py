@@ -13,7 +13,7 @@ from logger import setup_logger
 from utils import file_access_handler, get_script_dir, print_startup_info, check_network
 from api_client import fetch_company_data, fetch_user_data, fetch_industry_data
 from data_processor import (get_employees, get_company_detailed, get_latest_gross_income,
-                            get_company_stock, parse_xan_rehab_stats, calculate_stat_day_avg, parse_user_perks, get_industry_companies)
+                            get_company_stock, parse_empolyee_stats, calculate_stat_day_avg, parse_user_perks, get_industry_companies)
 from excel_handler import save_to_excel, generate_horizontal_report
 
 
@@ -174,14 +174,14 @@ def main():
 
     sheet_name_str = today_date.strftime("%Y-%m-%d")
 
-    df_emp = parse_xan_rehab_stats(df_emp, key)
-    logging.info("员工 Xanax 和 Rehabs 数据已获取并解析完成")
+    df_emp = parse_empolyee_stats(df_emp, key)
+    logging.info("员工 Xanax 和 去瑞士次数 数据已获取并解析完成")
     df_emp = calculate_stat_day_avg(
         df_emp, today_date, EMPLOYEE_DB_PATH, 'xantaken')
     logging.info("员工 Xanax 日均增长数据已计算完成")
     df_emp = calculate_stat_day_avg(
-        df_emp, today_date, EMPLOYEE_DB_PATH, 'rehabs')
-    logging.info("员工 Rehabs 日均增长数据已计算完成")
+        df_emp, today_date, EMPLOYEE_DB_PATH, 'switravel')
+    logging.info("员工 去瑞士次数 日均增长数据已计算完成")
     save_to_excel(EMPLOYEE_DB_PATH, df_emp, sheet_name_str)
     if not df_stock.empty:
         save_to_excel(STOCK_DB_PATH, df_stock, sheet_name_str)
