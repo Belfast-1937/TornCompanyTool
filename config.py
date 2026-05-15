@@ -2,10 +2,11 @@ import platform
 import requests
 
 
-VERSION = "1.2"
+VERSION = "1.3"
 # 2026-05-10: v1.0 发布
 # 2026-05-14: v1.1 发布 - 增加 Xanax 统计和 30 日平均计算，优化日志记录和用户提示，拆分文件结构，增强代码可读性和维护性
 # 2026-05-14: v1.2 发布 - 增加 Reheb 统计和 自定义日Xanax及Reheb平均计算，增加行业信息，增加日志记录，更新配置文件模板
+# 2026-05-14: v1.3 发布 - 修复Xanax平均计算bug，将 Rehab 次数改为 switravel（去瑞士次数），更准确反映员工主动解毒频率
 
 
 # Xanax 相关配置
@@ -26,7 +27,6 @@ INDUSTRY_DB_PATH = f"{DATABASE_DIR}/IndustryDB.xlsx"
 
 REPORT_DIR = './Report'
 EFFICIENCY_REPORT_PATH = f"{REPORT_DIR}/Company_Efficiency_Report.xlsx"
-
 
 
 # ==================== 股票字典 ====================

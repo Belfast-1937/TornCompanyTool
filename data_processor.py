@@ -203,7 +203,8 @@ def parse_empolyee_stats(df_emp, api_key):
 
     for idx, row in df_emp.iterrows():
         emp_id = int(row['EmployeeID'])
-        response = fetch_employee_data(emp_id, api_key)   # 或 fetch_personalstats
+        response = fetch_employee_data(
+            emp_id, api_key)   # 或 fetch_personalstats
         stats = get_employee_personalstats(response)
 
         xan_list.append(stats["xantaken"])
