@@ -33,3 +33,6 @@ Thumbs.db
 
 # 测试配置文件
 Company_template.ini
+Database
+Report
+logs

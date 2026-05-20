@@ -223,7 +223,7 @@ def parse_empolyee_stats(df_emp, api_key):
 
 def calculate_stat_day_avg(df_emp, today_date, employee_db_path, stat_column, days=None):
     """
-    计算近 N 日平均增长 - 已修复日期比较 Bug
+    计算近 N 日平均增长
     """
     if days is None:
         days = MAX_XAN_DAYS
@@ -236,58 +236,57 @@ def calculate_stat_day_avg(df_emp, today_date, employee_db_path, stat_column, da
 
     try:
         if not os.path.exists(employee_db_path):
-            logging.warning(f"EmployeeDB 文件不存在: {employee_db_path}")
             df_emp[avg_key] = "N/A"
             return df_emp
 
         xls = pd.ExcelFile(employee_db_path)
-        history = {}
+        history = {}  # date -> {emp_id: value}
 
-        # 统一处理 today_date 为 date 对象
         today = today_date.date() if isinstance(today_date, datetime) else today_date
 
-        logging.info(
-            f"正在加载历史数据... 目标日期: {today} (共 {len(xls.sheet_names)} 个 Sheet)")
+        logging.info(f"正在加载历史数据... 目标日期: {today}")
 
         for sheet in sorted(xls.sheet_names, reverse=True):
             try:
                 sheet_date = pd.to_datetime(sheet).date()
-
                 if sheet_date >= today:
-                    logging.debug(f"跳过当天或未来 Sheet: {sheet}")
                     continue
 
                 df = pd.read_excel(xls, sheet_name=sheet)
                 if 'EmployeeID' in df.columns and stat_column in df.columns:
                     history[sheet_date] = dict(
                         zip(df['EmployeeID'].astype(int), df[stat_column].astype(int)))
-                    logging.info(f"✓ 已加载历史 Sheet: {sheet}")
             except Exception as e:
                 logging.warning(f"读取 Sheet {sheet} 失败: {e}")
 
         if not history:
-            logging.warning("没有找到任何有效历史数据")
             df_emp[avg_key] = "N/A"
             return df_emp
 
-        logging.info(f"成功加载 {len(history)} 天历史数据: {sorted(history.keys())}")
+        logging.info(f"共加载 {len(history)} 天历史数据")
 
         avg_list = []
-        sorted_dates = sorted(history.keys(), reverse=True)   # 从新到旧排序
+        sorted_dates = sorted(history.keys(), reverse=True)  # 从新到旧
 
         for _, row in df_emp.iterrows():
             emp_id = int(row['EmployeeID'])
             current = int(row.get(stat_column, 0))
 
-            if not sorted_dates:
-                avg_list.append("N/A")
+            # === 为该员工找到最早有记录的日期 ===
+            emp_history_dates = [d for d in sorted_dates if emp_id in history[d]]
+
+            if not emp_history_dates:
+                avg_list.append("N/A")   # 该员工完全没有历史记录
                 continue
 
-            # 确定参考日期
-            if len(sorted_dates) >= days:
-                ref_date = sorted_dates[days - 1]
+            # 取该员工最早出现的历史日期
+            oldest_for_emp = emp_history_dates[-1]
+
+            # 如果历史足够，取 days 天前；否则取最早的一天
+            if len(emp_history_dates) >= days:
+                ref_date = emp_history_dates[days - 1]
             else:
-                ref_date = sorted_dates[-1]  # 最旧的一天
+                ref_date = oldest_for_emp
 
             prev_val = history[ref_date].get(emp_id)
 
@@ -308,7 +307,7 @@ def calculate_stat_day_avg(df_emp, today_date, employee_db_path, stat_column, da
         df_emp = df_emp.copy()
         df_emp[avg_key] = avg_list
 
-        logging.info(f"✅ {stat_column} {days}日平均计算完成")
+        logging.info(f"✅ {stat_column} {days}日平均计算完成（已处理新员工）")
         return df_emp
 
     except Exception as e:
