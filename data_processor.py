@@ -307,7 +307,7 @@ def calculate_stat_day_avg(df_emp, today_date, employee_db_path, stat_column, da
         df_emp = df_emp.copy()
         df_emp[avg_key] = avg_list
 
-        logging.info(f"✅ {stat_column} {days}日平均计算完成（已处理新员工）")
+        logging.info(f"✅ {stat_column} {days}日平均计算完成")
         return df_emp
 
     except Exception as e:
