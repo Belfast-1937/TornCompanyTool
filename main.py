@@ -13,8 +13,9 @@ from logger import setup_logger
 from utils import file_access_handler, get_script_dir, print_startup_info, check_network
 from api_client import fetch_company_data, fetch_user_data, fetch_industry_data
 from data_processor import (get_employees, get_company_detailed, get_latest_gross_income,
-                            get_company_stock, parse_empolyee_stats, calculate_stat_day_avg, parse_user_perks, get_industry_companies)
+                            get_company_stock, parse_empolyee_stats, calculate_stat_day_avg, parse_user_perks, get_industry_companies, calculate_financial_metrics)
 from excel_handler import save_to_excel, generate_horizontal_report
+from version_handler import check_and_upgrade_report
 
 
 # === 配置读取 ===
@@ -84,6 +85,8 @@ def main():
         print("❌ 错误：缺少参数，10秒后程序退出。")
         time.sleep(10)
         return
+    
+    check_and_upgrade_report()
 
     logging.info(f"开始获取公司数据 (Company ID: {cid})")
     print(f"📡 正在连接 API 获取公司数据 (ID: {cid})...")
@@ -142,15 +145,26 @@ def main():
     daily_data.rename(columns={'eff_total': 'Efficiency_Sum'}, inplace=True)
     daily_data['日期'] = today_date
 
+     # 计算财务指标
+    gross_income = df_inc['gross_income'].iloc[0] if not df_inc.empty else 0
+    advertising_budget = df_comp['advertising_budget'].iloc[0] if not df_comp.empty else 0
+    financial_metrics = calculate_financial_metrics(df_emp, df_stock, advertising_budget, gross_income)
+    
+
     metrics = pd.DataFrame([
         {"position": "合计效率",
             "Efficiency_Sum": df_emp['eff_total'].sum(), "日期": today_date},
         {"position": "环境 (%)", "Efficiency_Sum": df_comp['environment'].iloc[0]
          if not df_comp.empty else 0, "日期": today_date},
-        {"position": "广告费 (M)", "Efficiency_Sum": (
-            df_comp['advertising_budget'].iloc[0]/1000000) if not df_comp.empty else 0, "日期": today_date},
-        {"position": "日收入",
-            "Efficiency_Sum": df_inc['gross_income'].iloc[0], "日期": today_date}
+         {"position": "日收入",
+            "Efficiency_Sum": gross_income, "日期": today_date},
+        {"position": "广告费", "Efficiency_Sum": advertising_budget, "日期": today_date},
+        {"position": "工资支出",
+            "Efficiency_Sum": financial_metrics['total_employee_salary'], "日期": today_date},
+        {"position": "销售成本",
+            "Efficiency_Sum": financial_metrics['total_stock_cost'], "日期": today_date},
+        {"position": "净利润",
+            "Efficiency_Sum": financial_metrics['net_profit'], "日期": today_date}
     ])
     daily_data = pd.concat([daily_data, metrics], ignore_index=True)
     logging.info(
@@ -194,7 +208,7 @@ def main():
     df_industry = get_industry_companies(industry_res)
     if not df_industry.empty:
         save_to_excel(INDUSTRY_DB_PATH, df_industry, sheet_name_str)
-
+        
     generate_horizontal_report(
         HISTORY_DB_PATH, EFFICIENCY_REPORT_PATH, today_date)
 

@@ -4,6 +4,7 @@ import logging
 from openpyxl import load_workbook
 
 from utils import file_access_handler
+from config import VERSION
 
 
 @file_access_handler
@@ -73,12 +74,36 @@ def generate_horizontal_report(history_file, output_file, target_date):
                         values='Efficiency_Sum').reset_index()
     pivot_df.rename(columns={'position': '职位'}, inplace=True)
 
+    financial_metrics = [
+        '合计效率',
+        '环境 (%)',
+        '日收入',
+        '工资支出',
+        '广告费',
+        '销售成本',
+        '净利润'
+    ]
+
+    # 分离员工职位和财务指标
+    employee_rows = pivot_df[~pivot_df['职位'].isin(financial_metrics)].copy()
+    finance_rows = pivot_df[pivot_df['职位'].isin(financial_metrics)].copy()
+
+    # 财务指标按指定顺序排序
+    finance_rows['sort_key'] = finance_rows['职位'].apply(
+        lambda x: financial_metrics.index(x) if x in financial_metrics else 999
+    )
+    finance_rows = finance_rows.sort_values(
+        'sort_key').drop(columns=['sort_key'])
+
+    # 合并：员工 + 财务指标
+    final_df = pd.concat([employee_rows, finance_rows], ignore_index=True)
+
     date_cols = sorted([col for col in pivot_df.columns if col != '职位'])
-    pivot_df = pivot_df[['职位'] + date_cols]
+    final_df = final_df[['职位'] + date_cols]
 
     with pd.ExcelWriter(output_file, engine='openpyxl') as writer:
-        pivot_df.to_excel(writer, sheet_name='Efficiency_Report', index=False)
-        ws = writer.sheets['Efficiency_Report']
+        final_df.to_excel(writer, sheet_name=f"v{VERSION}", index=False)
+        ws = writer.sheets[f"v{VERSION}"]
         for col in ws.columns:
             max_len = max([len(str(cell.value)) for cell in col])
             ws.column_dimensions[col[0].column_letter].width = min(

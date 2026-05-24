@@ -2,12 +2,13 @@ import platform
 import requests
 
 
-VERSION = "1.4"
+VERSION = "1.5"
 # 2026-05-10: v1.0 发布
 # 2026-05-14: v1.1 发布 - 增加 Xanax 统计和 30 日平均计算，优化日志记录和用户提示，拆分文件结构，增强代码可读性和维护性
 # 2026-05-14: v1.2 发布 - 增加 Reheb 统计和 自定义日Xanax及Reheb平均计算，增加行业信息，增加日志记录，更新配置文件模板
 # 2026-05-14: v1.3 发布 - 修复Xanax平均计算bug，将 Rehab 次数改为 switravel（去瑞士次数），更准确反映员工主动解毒频率
 # 2026-05-20: v1.4 发布 - 修复了一个导致新员工无法正确计算平均值的 bug，现在会正确处理新员工的平均值计算，确保他们的平均值从第一天开始计算，而不是等到有足够数据后才开始计算
+# 2026-05-24: v1.5 发布 - 增加了报告中的净利润计算，增加了版本检查和升级功能，确保用户始终使用最新版本的报表格式，避免因版本不兼容导致的数据处理错误
 
 
 # Xanax 相关配置
@@ -22,12 +23,15 @@ DATABASE_DIR = './Database'
 
 EMPLOYEE_DB_PATH = f"{DATABASE_DIR}/EmployeeDB.xlsx"
 HISTORY_DB_PATH = f"{DATABASE_DIR}/HistoryDB.xlsx"
+BACKUP_HISTORY_DB_PATH = f"{DATABASE_DIR}/Old_HistoryDB.xlsx"
 STOCK_DB_PATH = f"{DATABASE_DIR}/StockDB.xlsx"
 USER_PERK_DB_PATH = f"{DATABASE_DIR}/UserPerkDB.xlsx"
 INDUSTRY_DB_PATH = f"{DATABASE_DIR}/IndustryDB.xlsx"
 
 REPORT_DIR = './Report'
 EFFICIENCY_REPORT_PATH = f"{REPORT_DIR}/Company_Efficiency_Report.xlsx"
+BACKUP_EFFICIENCY_REPORT_PATH = f"{REPORT_DIR}/Old_Company_Efficiency_Report.xlsx"
+
 
 
 # ==================== 股票字典 ====================
@@ -130,6 +134,7 @@ __all__ = [
     'LOG_DIR', 'DATABASE_DIR', 'REPORT_DIR',
     'EMPLOYEE_DB_PATH', 'HISTORY_DB_PATH', 'STOCK_DB_PATH',
     'USER_PERK_DB_PATH', 'EFFICIENCY_REPORT_PATH',
+    'BACKUP_HISTORY_DB_PATH', 'BACKUP_EFFICIENCY_REPORT_PATH',
     'STOCK_MAP', 'EDUCATION_MAP',
     'get_user_agent', 'get_session'
 ]

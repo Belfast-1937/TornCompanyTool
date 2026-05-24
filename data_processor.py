@@ -221,6 +221,53 @@ def parse_empolyee_stats(df_emp, api_key):
     return df_emp
 
 
+def calculate_financial_metrics(df_emp, df_stock, advertising_budget, gross_income):
+    """
+    计算财务指标
+
+    参数:
+        df_emp: 员工数据框，包含 'wage' 列
+        df_stock: 股票/库存数据框，包含 'cost' 和 'sold_amount' 列
+        advertising_budget: 广告预算
+        gross_income: 毛利润（日收入）
+
+    返回:
+        dict: 包含以下键的字典
+            - total_employee_salary: 总员工工资支出
+            - total_stock_cost: 总库存销售成本（cost * sold_amount）
+            - net_profit: 净利润（毛利润 - 工资支出 - 销售成本 - 广告费）
+    """
+    # 计算员工工资支出
+    total_employee_salary = 0
+    if not df_emp.empty and 'wage' in df_emp.columns:
+        df_emp_clean = df_emp.copy()
+        df_emp_clean['wage'] = pd.to_numeric(
+            df_emp_clean['wage'], errors='coerce').fillna(0)
+        total_employee_salary = df_emp_clean['wage'].sum()
+
+    # 计算库存销售成本
+    total_stock_cost = 0
+    if not df_stock.empty and 'cost' in df_stock.columns and 'sold_amount' in df_stock.columns:
+        df_stock_clean = df_stock.copy()
+        df_stock_clean['cost'] = pd.to_numeric(
+            df_stock_clean['cost'], errors='coerce').fillna(0)
+        df_stock_clean['sold_amount'] = pd.to_numeric(
+            df_stock_clean['sold_amount'], errors='coerce').fillna(0)
+        total_stock_cost = (
+            df_stock_clean['cost'] * df_stock_clean['sold_amount']).sum()
+
+    # 计算净利润
+    gross_income = gross_income if gross_income else 0
+    net_profit = gross_income - total_employee_salary - \
+        total_stock_cost - advertising_budget
+
+    return {
+        'total_employee_salary': total_employee_salary,
+        'total_stock_cost': total_stock_cost,
+        'net_profit': net_profit
+    }
+
+
 def calculate_stat_day_avg(df_emp, today_date, employee_db_path, stat_column, days=None):
     """
     计算近 N 日平均增长
@@ -273,7 +320,8 @@ def calculate_stat_day_avg(df_emp, today_date, employee_db_path, stat_column, da
             current = int(row.get(stat_column, 0))
 
             # === 为该员工找到最早有记录的日期 ===
-            emp_history_dates = [d for d in sorted_dates if emp_id in history[d]]
+            emp_history_dates = [
+                d for d in sorted_dates if emp_id in history[d]]
 
             if not emp_history_dates:
                 avg_list.append("N/A")   # 该员工完全没有历史记录
