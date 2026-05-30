@@ -190,7 +190,7 @@ def parse_user_perks(user_data):
     return pd.DataFrame(rows)
 
 
-def parse_empolyee_stats(df_emp, api_key):
+def parse_employee_stats(df_emp, api_key):
     """同时获取每个员工的 Xanax 和 去瑞士次数"""
     if df_emp.empty:
         return df_emp

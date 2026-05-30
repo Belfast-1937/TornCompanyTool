@@ -4,7 +4,7 @@ import math
 
 
 def calculate_efficiency(p_stat: int, p_req: int, s_stat: int, s_req: int) -> float:
-    """计算员工在当前属性下对某岗位的效率值（浮点数）。"""
+    """计算员工在当前属性下对某岗位的效率值（浮点数）"""
     try:
         p_base = min(45, (p_stat / p_req) * 45) if p_req > 0 else 0
         s_base = min(45, (s_stat / s_req) * 45) if s_req > 0 else 0

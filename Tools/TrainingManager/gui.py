@@ -5,7 +5,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 
 from constants import COMPANIES_DATA
-from api import fetch_company_data, parse_employees, parse_company_type
+from api_client import fetch_company_data, parse_employees, parse_company_type
 from trainer import find_best_training_job, get_emp_stats, calc_trains_to_next_point
 from config import load_config, save_config, clear_config
 from report import generate_report

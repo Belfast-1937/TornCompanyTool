@@ -13,7 +13,7 @@ from logger import setup_logger
 from utils import file_access_handler, get_script_dir, print_startup_info, check_network
 from api_client import fetch_company_data, fetch_user_data, fetch_industry_data
 from data_processor import (get_employees, get_company_detailed, get_latest_gross_income,
-                            get_company_stock, parse_empolyee_stats, calculate_stat_day_avg, parse_user_perks, get_industry_companies, calculate_financial_metrics)
+                            get_company_stock, parse_employee_stats, calculate_stat_day_avg, parse_user_perks, get_industry_companies, calculate_financial_metrics)
 from excel_handler import save_to_excel, generate_horizontal_report
 from version_handler import check_and_upgrade_report
 
@@ -188,7 +188,7 @@ def main():
 
     sheet_name_str = today_date.strftime("%Y-%m-%d")
 
-    df_emp = parse_empolyee_stats(df_emp, key)
+    df_emp = parse_employee_stats(df_emp, key)
     logging.info("员工 Xanax 和 去瑞士次数 数据已获取并解析完成")
     df_emp = calculate_stat_day_avg(
         df_emp, today_date, EMPLOYEE_DB_PATH, 'xantaken')

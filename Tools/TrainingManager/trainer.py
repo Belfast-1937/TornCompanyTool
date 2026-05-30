@@ -5,7 +5,7 @@ from efficiency import calculate_efficiency, calculate_efficiency_int
 
 
 def get_emp_stats(emp):
-    """获取员工的三个属性值字典。"""
+    """获取员工的三个属性值字典"""
     return {
         "MAN": emp.get('manual_labor', 0),
         "INT": emp.get('intelligence', 0),
@@ -14,7 +14,7 @@ def get_emp_stats(emp):
 
 
 def simulate_train_n(stats, gain_primary_stat, gain_secondary_stat, n):
-    """模拟训练 n 天后的属性值。返回新的 stats 字典。"""
+    """模拟训练 n 天后的属性值，返回新的 stats 字典"""
     new_stats = dict(stats)
     if gain_primary_stat in new_stats:
         new_stats[gain_primary_stat] += TRAIN_PRIMARY_BONUS * n
@@ -24,7 +24,7 @@ def simulate_train_n(stats, gain_primary_stat, gain_secondary_stat, n):
 
 
 def calc_train_eff_after_n(stats, gain_primary_stat, gain_secondary_stat, n, target_job):
-    """计算训练 n 天后对目标岗位的效率（向下取整）。"""
+    """计算训练 n 天后对目标岗位的效率（向下取整）"""
     new_stats = simulate_train_n(stats, gain_primary_stat, gain_secondary_stat, n)
     return calculate_efficiency_int(
         new_stats[target_job['primary_req_stat']],
@@ -79,11 +79,11 @@ def find_best_training_job(emp, target_job, all_jobs):
 
     返回:
         dict: {
-            "best_job_name": str,
-            "best_improvement": float,
-            "all_results": [(job_name, primary_gain, secondary_gain, improvement), ...],
-            "current_eff": float,
-            "current_stats": dict,
+            "best_job_name": 最优训练岗位名称,
+            "best_improvement": 效率提升值,
+            "all_results": [(岗位名称, 主属性, 副属性, 提升值), ...],
+            "current_eff": 当前效率值,
+            "current_stats": 当前属性字典,
         }
     """
     current_stats = get_emp_stats(emp)

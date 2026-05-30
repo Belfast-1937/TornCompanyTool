@@ -5,14 +5,26 @@ import requests
 
 from constants import API_URL_TEMPLATE, API_TIMEOUT, API_RETRY_WAIT, API_NETWORK_WAIT, API_MAX_RETRIES
 
+# 全局 Session 对象，确保在整个程序中复用同一个 Session
+_session = None
+
+
+def get_session():
+    """获取全局 Session 单例"""
+    global _session
+    if _session is None:
+        _session = requests.Session()
+    return _session
+
 
 def fetch_company_data(company_id, api_key):
-    """调用 Torn API 获取公司数据。返回 JSON 字典；出错时返回包含 "error" 键的字典。"""
+    """调用 Torn API 获取公司数据，返回 JSON 字典；出错时返回包含 "error" 键的字典。"""
     url = API_URL_TEMPLATE.format(company_id=company_id, api_key=api_key)
+    session = get_session()
 
     for attempt in range(1, API_MAX_RETRIES + 1):
         try:
-            response = requests.get(url, timeout=API_TIMEOUT)
+            response = session.get(url, timeout=API_TIMEOUT)
             response.raise_for_status()
             data = response.json()
 

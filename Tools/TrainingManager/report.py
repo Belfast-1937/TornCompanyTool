@@ -13,7 +13,7 @@ def generate_report(company_name, target_company_id, plan_results):
     参数:
         company_name: 公司名称
         target_company_id: 公司 ID
-        plan_results: list[dict]，每个 dict 包含 emp, target_job_name, plan
+        plan_results: list[dict]，每个 dict 包含 emp, target_job_name, plan, trains_needed
     """
     reports_dir = os.path.join(SCRIPT_DIR, "reports")
     os.makedirs(reports_dir, exist_ok=True)

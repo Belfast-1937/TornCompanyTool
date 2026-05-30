@@ -7,7 +7,7 @@ from constants import CONFIG_FILE
 
 
 def load_config():
-    """加载配置文件。"""
+    """加载配置文件"""
     if os.path.exists(CONFIG_FILE):
         try:
             with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
@@ -18,7 +18,7 @@ def load_config():
 
 
 def save_config(api_key, user_id, company_id="", company_type=None):
-    """保存配置文件。"""
+    """保存配置文件"""
     config = {
         "api_key": api_key,
         "user_id": user_id,
@@ -31,6 +31,6 @@ def save_config(api_key, user_id, company_id="", company_type=None):
 
 
 def clear_config():
-    """清除配置文件。"""
+    """清除配置文件"""
     if os.path.exists(CONFIG_FILE):
         os.remove(CONFIG_FILE)

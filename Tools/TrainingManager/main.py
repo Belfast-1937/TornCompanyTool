@@ -16,11 +16,17 @@ except ImportError:
 
 import tkinter as tk
 
-from constants import SCRIPT_DIR,VERSION
+from constants import SCRIPT_DIR, VERSION
 from gui import TrainingPlannerApp
 
-if __name__ == "__main__":
+
+def main():
+    """启动 Torn City 员工训练规划工具 GUI 应用"""
     os.chdir(SCRIPT_DIR)
     root = tk.Tk()
     app = TrainingPlannerApp(root, VERSION)
     root.mainloop()
+
+
+if __name__ == "__main__":
+    main()
