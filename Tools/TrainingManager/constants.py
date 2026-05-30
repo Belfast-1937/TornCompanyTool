@@ -11,7 +11,7 @@ def _get_script_dir():
     return _os.path.dirname(_os.path.abspath(__file__))
 
 
-VERSION = "1.0"
+VERSION = "1.1"
 
 SCRIPT_DIR = _get_script_dir()
 CONFIG_FILE = _os.path.join(SCRIPT_DIR, "config.json")
