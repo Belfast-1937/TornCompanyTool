@@ -10,7 +10,8 @@ def _get_script_dir():
         return _os.path.dirname(_sys.executable)
     return _os.path.dirname(_os.path.abspath(__file__))
 
-
+# 1.0: 发布初始版本
+# 1.1：删除不必要的用户ID输入；修复当多个训练岗位属性增益相同时，优先推荐员工当前岗位而非最后一个；同步游戏内效率计算函数，修正效率增加计算逻辑
 VERSION = "1.1"
 
 SCRIPT_DIR = _get_script_dir()
