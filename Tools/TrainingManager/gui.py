@@ -367,7 +367,7 @@ class TrainingPlannerApp:
         self.tree.heading("best_train_job", text="推荐训练岗位")
         self.tree.column("best_train_job", width=160)
         self.tree.heading("eff_improvement", text="效率提升值")
-        self.tree.column("eff_improvement", width=100, anchor=tk.CENTER)
+        self.tree.column("eff_improvement", width=130, anchor=tk.CENTER)
         self.tree.heading("trains_needed", text="提升所需训练")
         self.tree.column("trains_needed", width=120, anchor=tk.CENTER)
         self.tree.heading("employee_id", text="员工ID")
