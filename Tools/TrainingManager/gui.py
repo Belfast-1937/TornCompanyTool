@@ -33,50 +33,64 @@ class TrainingPlannerApp:
         top_frame.pack(fill=tk.X)
 
         # 第一行
-        ttk.Label(top_frame, text="公司类型:").grid(row=0, column=0, padx=(0, 5), sticky=tk.W)
+        ttk.Label(top_frame, text="公司类型:").grid(
+            row=0, column=0, padx=(0, 5), sticky=tk.W)
         self.company_var = tk.StringVar()
-        self.company_combo = ttk.Combobox(top_frame, textvariable=self.company_var, state="readonly", width=28)
-        company_list = [f"{cid} - {data['company_name']}" for cid, data in COMPANIES_DATA.items()]
+        self.company_combo = ttk.Combobox(
+            top_frame, textvariable=self.company_var, state="readonly", width=28)
+        company_list = [
+            f"{cid} - {data['company_name']}" for cid, data in COMPANIES_DATA.items()]
         self.company_combo['values'] = company_list
         if company_list:
             self.company_combo.current(0)
         self.company_combo.grid(row=0, column=1, padx=(0, 15), sticky=tk.W)
-        self.company_combo.bind('<<ComboboxSelected>>', self._on_company_changed)
+        self.company_combo.bind('<<ComboboxSelected>>',
+                                self._on_company_changed)
 
-        ttk.Label(top_frame, text="公司 ID:").grid(row=0, column=2, padx=(0, 5), sticky=tk.W)
+        ttk.Label(top_frame, text="公司 ID:").grid(
+            row=0, column=2, padx=(0, 5), sticky=tk.W)
         self.company_id_var = tk.StringVar()
-        self.company_id_entry = ttk.Entry(top_frame, textvariable=self.company_id_var, width=10)
+        self.company_id_entry = ttk.Entry(
+            top_frame, textvariable=self.company_id_var, width=10)
         self.company_id_entry.grid(row=0, column=3, padx=(0, 15), sticky=tk.W)
 
-        ttk.Label(top_frame, text="API:").grid(row=0, column=4, padx=(0, 5), sticky=tk.W)
+        ttk.Label(top_frame, text="API:").grid(
+            row=0, column=4, padx=(0, 5), sticky=tk.W)
         self.api_key_var = tk.StringVar()
-        self.api_key_entry = ttk.Entry(top_frame, textvariable=self.api_key_var, show="*", width=30)
+        self.api_key_entry = ttk.Entry(
+            top_frame, textvariable=self.api_key_var, show="*", width=30)
         self.api_key_entry.grid(row=0, column=5, padx=(0, 15), sticky=tk.W)
 
         # 保存/清除
-        self.save_btn = ttk.Button(top_frame, text="保存配置", command=self._save_config)
+        self.save_btn = ttk.Button(
+            top_frame, text="保存配置", command=self._save_config)
         self.save_btn.grid(row=0, column=6, padx=(0, 5))
 
-        self.clear_btn = ttk.Button(top_frame, text="清除配置", command=self._clear_config)
+        self.clear_btn = ttk.Button(
+            top_frame, text="清除配置", command=self._clear_config)
         self.clear_btn.grid(row=0, column=7)
 
         # 中部
         mid_frame = ttk.Frame(self.root, padding="10 5 10 5")
         mid_frame.pack(fill=tk.X)
 
-        self.fetch_btn = ttk.Button(mid_frame, text="拉取员工数据", command=self._fetch_employees)
+        self.fetch_btn = ttk.Button(
+            mid_frame, text="拉取员工数据", command=self._fetch_employees)
         self.fetch_btn.pack(side=tk.LEFT, padx=(0, 20))
 
         self.status_var = tk.StringVar(value="就绪")
-        self.status_label = ttk.Label(mid_frame, textvariable=self.status_var, foreground="gray")
+        self.status_label = ttk.Label(
+            mid_frame, textvariable=self.status_var, foreground="gray")
         self.status_label.pack(side=tk.LEFT)
 
         # 表格
         table_frame = ttk.Frame(self.root, padding="10 5 10 5")
         table_frame.pack(fill=tk.BOTH, expand=True)
 
-        columns = ("employee_id", "name", "current_position", "eff_total", "target_position")
-        self.tree = ttk.Treeview(table_frame, columns=columns, show="headings", selectmode="browse")
+        columns = ("employee_id", "name", "current_position",
+                   "eff_total", "target_position")
+        self.tree = ttk.Treeview(
+            table_frame, columns=columns, show="headings", selectmode="browse")
 
         self.tree.heading("employee_id", text="员工ID")
         self.tree.column("employee_id", width=80, anchor=tk.CENTER)
@@ -89,9 +103,12 @@ class TrainingPlannerApp:
         self.tree.heading("target_position", text="期待岗位")
         self.tree.column("target_position", width=180)
 
-        tree_scroll_y = ttk.Scrollbar(table_frame, orient=tk.VERTICAL, command=self.tree.yview)
-        tree_scroll_x = ttk.Scrollbar(table_frame, orient=tk.HORIZONTAL, command=self.tree.xview)
-        self.tree.configure(yscrollcommand=tree_scroll_y.set, xscrollcommand=tree_scroll_x.set)
+        tree_scroll_y = ttk.Scrollbar(
+            table_frame, orient=tk.VERTICAL, command=self.tree.yview)
+        tree_scroll_x = ttk.Scrollbar(
+            table_frame, orient=tk.HORIZONTAL, command=self.tree.xview)
+        self.tree.configure(yscrollcommand=tree_scroll_y.set,
+                            xscrollcommand=tree_scroll_x.set)
         self.tree.grid(row=0, column=0, sticky="nsew")
         tree_scroll_y.grid(row=0, column=1, sticky="ns")
         tree_scroll_x.grid(row=1, column=0, sticky="ew")
@@ -107,7 +124,8 @@ class TrainingPlannerApp:
         bottom_frame = ttk.Frame(self.root, padding="10 5 10 10")
         bottom_frame.pack(fill=tk.X)
 
-        self.plan_btn = ttk.Button(bottom_frame, text="规划训练", command=self._plan_training)
+        self.plan_btn = ttk.Button(
+            bottom_frame, text="规划训练", command=self._plan_training)
         self.plan_btn.pack(side=tk.LEFT)
 
     # ---- 事件 ----
@@ -118,7 +136,8 @@ class TrainingPlannerApp:
     def _update_job_names(self):
         company_id = self._get_selected_company_id()
         if company_id and company_id in COMPANIES_DATA:
-            self.company_job_names = [job['name'] for job in COMPANIES_DATA[company_id]['jobs']]
+            self.company_job_names = [job['name']
+                                      for job in COMPANIES_DATA[company_id]['jobs']]
         else:
             self.company_job_names = []
 
@@ -210,11 +229,13 @@ class TrainingPlannerApp:
         def worker():
             response = fetch_company_data(tornado_id, api_key)
             if "error" in response:
-                self.root.after(0, lambda: self._on_fetch_error(response["error"]))
+                self.root.after(
+                    0, lambda: self._on_fetch_error(response["error"]))
             else:
                 employees = parse_employees(response)
                 company_type = parse_company_type(response)
-                self.root.after(0, lambda: self._on_fetch_success(employees, company_type))
+                self.root.after(0, lambda: self._on_fetch_success(
+                    employees, company_type))
 
         threading.Thread(target=worker, daemon=True).start()
 
@@ -264,7 +285,8 @@ class TrainingPlannerApp:
                 emp.get('EmployeeID', ''),
                 emp.get('name', ''),
                 emp.get('position', ''),
-                f"{emp.get('eff_total', 0):.2f}" if emp.get('eff_total') is not None else "N/A",
+                f"{emp.get('eff_total', 0):.2f}" if emp.get(
+                    'eff_total') is not None else "N/A",
                 target_pos,
             ))
             self._create_combo_for_row(row_id, target_pos)
@@ -286,7 +308,8 @@ class TrainingPlannerApp:
         except:
             return
 
-        combo = ttk.Combobox(self.tree, values=self.company_job_names, state="readonly")
+        combo = ttk.Combobox(
+            self.tree, values=self.company_job_names, state="readonly")
         combo.place(x=x, y=y, width=width, height=height)
         if current_val in self.company_job_names:
             combo.set(current_val)
@@ -351,7 +374,8 @@ class TrainingPlannerApp:
         # 重置列
         current_columns = list(self.tree['columns'])
         if 'best_train_job' in current_columns:
-            self.tree['columns'] = ("employee_id", "name", "current_position", "eff_total", "target_position")
+            self.tree['columns'] = (
+                "employee_id", "name", "current_position", "eff_total", "target_position")
             self.tree.heading("employee_id", text="员工ID")
             self.tree.heading("name", text="姓名")
             self.tree.heading("current_position", text="当前岗位")
@@ -408,9 +432,12 @@ class TrainingPlannerApp:
                     plan['current_stats'], target_job, best_job)
 
                 new_values = list(values)
-                new_values.append(plan['best_job_name'] if plan['best_job_name'] else 'N/A')
-                new_values.append(f"{plan['best_improvement']:.4f}" if plan['best_improvement'] > -999 else 'N/A')
-                new_values.append(f"{trains_needed}次" if trains_needed < 100000 else ">10万")
+                new_values.append(plan['best_job_name']
+                                  if plan['best_job_name'] else 'N/A')
+                new_values.append(
+                    f"{plan['best_improvement']:.4f}" if plan['best_improvement'] > -999 else 'N/A')
+                new_values.append(
+                    f"{trains_needed}次" if trains_needed < 100000 else ">10万")
                 self.tree.item(item_id, values=new_values)
 
                 plan_results.append({
@@ -418,7 +445,8 @@ class TrainingPlannerApp:
                     'target_job': target_job, 'plan': plan, 'trains_needed': trains_needed,
                 })
 
-            report_path = generate_report(company_name, company_id, plan_results)
+            report_path = generate_report(
+                company_name, company_id, plan_results)
             self.status_var.set("训练规划完成")
             self.status_label.configure(foreground="green")
             messagebox.showinfo("规划完成", f"训练规划已完成！\n报告已保存至:\n{report_path}")
