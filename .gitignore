@@ -38,3 +38,4 @@ Report
 logs
 *.png
 test.py
+*report*

@@ -42,8 +42,11 @@ def generate_report(company_name, target_company_id, plan_results):
                 f"最终需求 → 主: {target_job['primary_req_stat']} ({target_job['primary_req_value']}) "
                 f"| 副: {target_job['secondary_req_stat']} ({target_job['secondary_req_value']})\n")
             f.write(f"\n")
+            trains_needed = pr.get('trains_needed', '?')
+            trains_str = f"{trains_needed}次" if isinstance(trains_needed, int) and trains_needed < 100000 else ">10万"
             f.write(
                 f"→ **最佳训练岗位: {plan['best_job_name']}** (效率提升 {plan['best_improvement']:.4f})\n")
+            f.write(f"→ 训练 {trains_str} 后工作效率可增加至少 1 点\n")
             f.write(f"\n")
             f.write(f"训练岗位{'':20s}主属性   副属性   效率Δ\n")
             f.write(f"{'-' * 50}\n")
