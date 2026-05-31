@@ -17,7 +17,7 @@ from trainer import find_best_training_job, calc_trains_to_next_point
 from config import load_config, save_config, clear_config
 from report import generate_report
 
-_BG_PATH = os.path.join(SCRIPT_DIR, "background.png")
+_BG_PATH = "./background.png"
 
 
 class _Signals(QObject):

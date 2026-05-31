@@ -114,7 +114,7 @@ def find_best_training_job(emp, target_job, all_jobs):
 
         # 优先选择提升更大的；提升相同时优先选当前岗位
         if (improvement > best_improvement or
-                (improvement == best_improvement and job['name'] == emp_position)):
+                (abs(improvement - best_improvement) < 1e-10 and job['name'] == emp_position)):
             best_improvement = improvement
             best_job_name = job['name']
 
