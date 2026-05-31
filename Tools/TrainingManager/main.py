@@ -2,31 +2,30 @@
 # -*- coding: utf-8 -*-
 """
 Torn City 员工训练规划工具
-独立的 Python GUI 应用程序，用于规划公司员工的最优训练岗位。
+PySide6 GUI 应用程序，用于规划公司员工的最优训练岗位。
 """
 import os
 import sys
 
 # --- 检查依赖 ---
 try:
-    import requests
+    from PySide6.QtWidgets import QApplication
 except ImportError:
-    print("请先安装 requests 库: pip install requests")
-    sys.exit(1)
-
-import tkinter as tk
+    print("PySide6 未安装，正在尝试通过清华镜像安装...")
+    import subprocess
+    subprocess.check_call([
+        sys.executable, "-m", "pip", "install", "PySide6",
+        "-i", "https://pypi.tuna.tsinghua.edu.cn/simple",
+        "--trusted-host", "pypi.tuna.tsinghua.edu.cn"
+    ])
+    from PySide6.QtWidgets import QApplication
 
 from constants import SCRIPT_DIR, VERSION
-from gui import TrainingPlannerApp
-
-
-def main():
-    """启动 Torn City 员工训练规划工具 GUI 应用"""
-    os.chdir(SCRIPT_DIR)
-    root = tk.Tk()
-    app = TrainingPlannerApp(root, VERSION)
-    root.mainloop()
-
+from gui_pyqt import TrainingPlannerApp
 
 if __name__ == "__main__":
-    main()
+    os.chdir(SCRIPT_DIR)
+    app = QApplication(sys.argv)
+    window = TrainingPlannerApp(VERSION)
+    window.show()
+    sys.exit(app.exec())
