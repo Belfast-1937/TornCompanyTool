@@ -70,7 +70,7 @@ def calc_trains_to_next_point(current_stats, target_job, best_train_job):
 
 def find_best_training_job(emp, target_job, all_jobs):
     """
-    为一名员工找到最优训练岗位。当效率提升相同时，优先推荐员工当前岗位。
+    为一名员工找到最优训练岗位。当效率提升相同时，优先推荐期待岗位。
 
     参数:
         emp: 员工字典（包含 manual_labor, intelligence, endurance）
@@ -93,7 +93,7 @@ def find_best_training_job(emp, target_job, all_jobs):
         current_stats[target_job['secondary_req_stat']],
         target_job['secondary_req_value'],
     )
-    emp_position = emp.get('position', '')
+    target_position = target_job['name']
 
     results = []
     best_job_name = None
@@ -112,9 +112,9 @@ def find_best_training_job(emp, target_job, all_jobs):
         results.append((job['name'], job['primary_gain_stat'],
                        job['secondary_gain_stat'], improvement))
 
-        # 优先选择提升更大的；提升相同时优先选当前岗位
+        # 优先选择提升更大的；提升相同时优先选期待岗位
         if (improvement > best_improvement or
-                (abs(improvement - best_improvement) < 1e-10 and job['name'] == emp_position)):
+                (abs(improvement - best_improvement) < 1e-10 and job['name'] == target_position)):
             best_improvement = improvement
             best_job_name = job['name']
 
