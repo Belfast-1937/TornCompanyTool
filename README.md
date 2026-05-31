@@ -30,10 +30,11 @@
 ### 🛠️ 辅助工具（Tools/ 目录）
 
 #### TrainingManager — 员工训练规划工具
-- 通过 GUI 界面拉取公司员工数据
+- 基于 **PySide6** 的现代化 GUI 界面，支持背景图片美化
+- 通过 API 拉取公司员工数据（自动匹配公司类型）
 - 基于员工当前属性（MAN / INT / END）模拟各岗位训练效果
 - 计算训练一天后对指定目标岗位的效率提升值
-- 为每位员工推荐最优训练岗位
+- 为每位员工推荐最优训练岗位，并估算达到效率提升 1 点所需训练次数
 - 自动生成 TXT 格式的训练规划报告
 
 #### IsBossDead — 行业招聘侦查工具
@@ -140,7 +141,13 @@ pyinstaller --onefile --icon=output.ico main.py
 ## 🛠️ 工具集：TrainingManager
 
 ### 功能介绍
-Torn City 员工训练规划工具，通过 **Tkinter GUI** 界面操作。用于帮助公司管理者规划员工的最优训练方案——不需要实际转岗，只需训练一天即可观察效率变化。
+Torn City 员工训练规划工具，通过 **PySide6** 现代化 GUI 界面操作。用于帮助公司管理者规划员工的最优训练方案——不需要实际转岗，只需在合适的岗位训练即可提升目标岗位效率。支持背景图片美化界面。
+
+### 依赖
+```bash
+pip install PySide6 requests
+```
+- PySide6 首次运行时会自动尝试通过清华镜像安装，无需手动操作
 
 ### 配置文件
 GUI 内输入的配置自动保存到 `config.json`，无需手动编辑。包含：
@@ -174,12 +181,13 @@ python main.py
 - 每位员工的当前属性值
 - 目标岗位的属性需求
 - **推荐训练岗位**及效率提升值
+- **提升所需训练次数**（达到效率提升 1 点所需的天数）
 - 所有岗位按效率提升降序排列的详细对比表
 
 ### 技术细节
-- 内置 39 家公司的完整岗位数据（共 300+ 岗位）
+- 内置 39 家公司的完整岗位数据（共 300+ 岗位，存储于 `company_data.py`）
 - API 拉取时自动匹配公司类型
-- 多线程处理避免 GUI 卡顿
+- PySide6 信号/槽机制 + 多线程处理避免 GUI 卡顿
 
 ---
 
@@ -271,10 +279,11 @@ TornCompanyTool/
 ├── Tools/
 │   ├── TrainingManager/        # 员工训练规划工具
 │   │   ├── main.py             #    GUI 程序入口
-│   │   ├── gui.py              #    Tkinter GUI 界面
-│   │   ├── api_client.py       #    Torn API 调用
+│   │   ├── gui_pyqt.py         #    PySide6 GUI 界面
+│   │   ├── api_client.py       #    Torn API 调用与数据解析
 │   │   ├── config.py           #    配置读写（JSON）
-│   │   ├── constants.py        #    常量与 39 家公司岗位数据
+│   │   ├── constants.py        #    常量定义
+│   │   ├── company_data.py     #    39 家公司岗位硬编码数据
 │   │   ├── efficiency.py       #    效率计算公式
 │   │   ├── trainer.py          #    训练规划引擎
 │   │   ├── report.py           #    报告生成
@@ -323,7 +332,9 @@ TornCompanyTool/
 
 | 工具 | 版本 | 发布日期 | 主要更新 |
 |------|------|----------|---------|
-| TrainingManager | v1.0 | 2026-05-30 | 初始发布，GUI 训练规划 |
+| TrainingManager | v1.0 | 2026-05-30 | 初始发布，Tkinter GUI 训练规划 |
+| TrainingManager | v1.1 | 2026-05-31 | 删除 User ID 输入；修复同效率岗位排序；修正效率计算逻辑 |
+| TrainingManager | v1.2 | 2026-05-31 | 更换 GUI 框架为 PySide6；增加背景图片美化；增加训练次数估算 |
 | IsBossDead | v0.1 | 2026-05 | 初始版本，核心扫描功能 |
 | IsBossDead | v0.2 | 2026-05 | 增加最小星级过滤、Director Faction 信息、加快请求频率 |
 
@@ -344,7 +355,7 @@ A: **不建议删除**。若要重新开始，可备份后删除 `HistoryDB.xlsx
 A: 编辑 `config.py` 中的 `MAX_XAN_DAYS` 参数。
 
 ### Q: TrainingManager 和 IsBossDead 有依赖冲突吗？
-A: 没有。两个子工具各自独立，只需安装 `requests` 库；TrainingManager 额外需要 Tkinter（Python 内置）。
+A: 没有。两个子工具各自独立，只需安装 `requests` 库；TrainingManager 使用 PySide6，首次运行时会自动安装。
 
 ---
 
