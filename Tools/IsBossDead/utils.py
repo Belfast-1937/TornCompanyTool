@@ -6,7 +6,7 @@ import platform
 import logging
 import pandas as pd
 from functools import wraps
-from config import VERSION, RESULT_DIR, MIN_INTERVAL
+from config import VERSION, RESULT_DIR, DB_DIR, MIN_INTERVAL
 
 
 def file_access_handler(func):
@@ -46,10 +46,11 @@ def print_startup_info():
     print("   获取 IndustryID、ApiKey、BossOfflineDays、EmployeeActiveDays 和 MinimumStarRating 等配置信息。")
     print(f"2. [速率保护] 本程序已内置 API 调用频率控制（约{(60/MIN_INTERVAL)}次/分钟），")
     print("   请勿高频运行，以避免触发 Torn 官方限流。")
-    print("3. [功能说明] 本工具用于扫描指定行业内：")
+    print(f"3. [缓存加速] 老板状态数据将缓存至 → {DB_DIR}，请勿删除其中的文件。")
+    print("4. [功能说明] 本工具用于扫描指定行业内：")
     print("   • 老板长时间不活跃")
     print("   • 但仍有活跃员工的公司")
-    print(f"4. [结果输出] 扫描结果将保存至 → {RESULT_DIR}")
+    print(f"5. [结果输出] 扫描结果将保存至 → {RESULT_DIR}")
     print("=" * 70)
     print("程序启动中...\n")
 

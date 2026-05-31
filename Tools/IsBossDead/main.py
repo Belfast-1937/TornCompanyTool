@@ -9,7 +9,7 @@ import pandas as pd
 from api_client import fetch_industry_data, fetch_company_profile, fetch_player_profile
 from utils import print_startup_info, check_network, file_access_handler, get_script_dir
 from logger import setup_logger
-from config import RESULT_DIR
+from config import RESULT_DIR, DB_DIR
 
 
 @file_access_handler
@@ -91,6 +91,108 @@ def get_director_faction(player_profile):
     return 'None'
 
 
+def load_boss_database(industry_id):
+    """加载老板状态数据库，缓存所有公司老板的last_action时间戳
+    
+    数据库文件: Database/Industry_BossDB_{IndustryID}.xlsx
+    列: CompanyID, DirectorID, BossLastActionTS
+    
+    Returns:
+        dict 或 None: {company_id: {'director_id': int, 'boss_last_action_ts': int}}
+    """
+    try:
+        os.makedirs(DB_DIR, exist_ok=True)
+        db_file = os.path.join(DB_DIR, f"Industry_BossDB_{industry_id}.xlsx")
+        if not os.path.exists(db_file):
+            logging.info("数据库文件不存在，所有公司将请求API")
+            print("📋 未找到缓存数据库，将正常扫描所有公司\n")
+            return None
+
+        df = pd.read_excel(db_file)
+        required_cols = {'CompanyID', 'DirectorID', 'BossLastActionTS'}
+        if not required_cols.issubset(df.columns):
+            logging.warning("数据库文件缺少必要列，放弃使用缓存")
+            print("⚠️ 数据库文件格式不兼容，将正常扫描所有公司\n")
+            return None
+
+        db = {}
+        for _, row in df.iterrows():
+            cid = int(row['CompanyID'])
+            db[cid] = {
+                'director_id': int(row.get('DirectorID', 0)),
+                'boss_last_action_ts': int(row['BossLastActionTS'])
+            }
+
+        logging.info(f"加载数据库: {db_file} ({len(db)} 条记录)")
+        print(f"📋 加载缓存数据库 ({len(db)} 条记录)\n")
+        return db
+    except Exception as e:
+        logging.warning(f"加载数据库失败: {e}")
+        print(f"⚠️ 加载数据库出错: {e}，将正常扫描所有公司\n")
+        return None
+
+
+def save_boss_database(industry_id, db_data):
+    """保存老板状态数据库
+    
+    Args:
+        industry_id: 行业ID
+        db_data: {company_id: {'director_id': int, 'boss_last_action_ts': int}}
+    """
+    try:
+        os.makedirs(DB_DIR, exist_ok=True)
+        db_file = os.path.join(DB_DIR, f"Industry_BossDB_{industry_id}.xlsx")
+
+        rows = []
+        for cid, info in db_data.items():
+            rows.append({
+                'CompanyID': cid,
+                'DirectorID': info['director_id'],
+                'BossLastActionTS': info['boss_last_action_ts']
+            })
+
+        df = pd.DataFrame(rows)
+        df.to_excel(db_file, index=False)
+        logging.info(f"数据库已保存: {db_file} ({len(rows)} 条记录)")
+        print(f"💾 缓存数据库已更新 ({len(rows)} 条记录)")
+    except Exception as e:
+        logging.warning(f"保存数据库失败: {e}")
+        print(f"⚠️ 保存数据库出错: {e}")
+
+
+def should_skip_by_cache(company_id, director_id, db, current_ts, boss_offline_days):
+    """根据数据库缓存判断是否可以跳过API请求
+    
+    直接使用数据库中记录的BossLastActionTS计算离线天数。
+    如果离线天数还未达到阈值且老板未换人，则可以跳过。
+    
+    Args:
+        company_id: 公司ID
+        director_id: 当前老板ID
+        db: 数据库字典
+        current_ts: 当前时间戳
+        boss_offline_days: 配置文件中的老板离线天数阈值
+    
+    Returns:
+        bool: True 表示应该跳过
+    """
+    if not db or company_id not in db:
+        return False
+
+    entry = db[company_id]
+
+    # 如果老板换了，不能依赖缓存
+    if entry['director_id'] and director_id and entry['director_id'] != int(director_id):
+        return False
+
+    # 直接计算离线天数
+    offline_days = (current_ts - entry['boss_last_action_ts']) / 86400.0
+    if offline_days < boss_offline_days:
+        return True
+
+    return False
+
+
 def main():
     log_file = setup_logger()
     script_dir = get_script_dir()
@@ -105,6 +207,7 @@ def main():
     print(f"📂 工作目录已切换到: {script_dir}")
 
     os.makedirs(RESULT_DIR, exist_ok=True)
+    os.makedirs(DB_DIR, exist_ok=True)
 
     if not check_network():
         logging.error("网络连接失败，程序退出")
@@ -154,14 +257,23 @@ def main():
     df = pd.DataFrame(candidates).sort_values('daily_income', ascending=False)
     print(f"共 {len(df)} 家有员工的公司不低于最小星级要求{minimum_star_rating}\n")
 
+    # 2.5 加载老板状态数据库
+    db = load_boss_database(industry_id) or {}
+
     results = []
 
     for _, row in df.iterrows():
         cid = row['company_id']
         name = row['name']
+        director_id = row['director_id']
 
         print(
             f"检查: {name} (ID: {cid}) | 员工: {row['employees_hired']} | 日收入: {row['daily_income']:,}")
+
+        # 预判断：查数据库缓存，判断是否可跳过API请求
+        if should_skip_by_cache(cid, director_id, db, current_ts, boss_offline_days):
+            print(f"  📋 缓存命中，老板离线尚未达阈值，跳过\n")
+            continue
 
         comp_data = fetch_company_profile(cid, api_key)
         if 'error' in comp_data or 'company' not in comp_data:
@@ -172,7 +284,6 @@ def main():
         employees = company.get('employees', {})
 
         # 检查老板
-        director_id = row['director_id']
         boss = employees.get(str(director_id))
         if not boss:
             print("  ⚠️ 未找到老板信息\n")
@@ -183,6 +294,12 @@ def main():
         if not boss_ts:
             print("  ⚠️ 无法获取老板上线时间\n")
             continue
+
+        # 更新数据库（无论老板是否离线达标，都记录最新 last_action 时间戳）
+        db[cid] = {
+            'director_id': int(director_id) if director_id else 0,
+            'boss_last_action_ts': boss_ts
+        }
 
         boss_offline = (current_ts - boss_ts) / 86400.0
 
@@ -221,6 +338,9 @@ def main():
             })
         else:
             print("  ❌ 没有最近上线的员工\n")
+
+    # 保存数据库
+    save_boss_database(industry_id, db)
 
     # 输出结果
     print("\n" + "="*80)
