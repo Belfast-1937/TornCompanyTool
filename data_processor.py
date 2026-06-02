@@ -78,15 +78,14 @@ def get_employee_personalstats(response):
 
 def get_industry_companies(response):
     """提取指定行业内的公司数据"""
-    companies = response.get('company', {})
+    companies = response.get('company', [])
     if not companies:
         logging.warning("未获取到 companies 数据")
         return pd.DataFrame()
-
     rows = []
-    for cid, info in companies.items():
+    for info in companies:
         rows.append({
-            'CompanyID': int(cid),
+            'CompanyID': info.get('ID', 0),
             'Name': info.get('name', 'Unknown'),
             'Director': info.get('director'),
             'Stars': info.get('rating', 0),
