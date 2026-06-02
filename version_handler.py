@@ -1,7 +1,9 @@
 import os
+import re
 import pandas as pd
 import logging
 import shutil
+from openpyxl import load_workbook
 
 from config import (VERSION,
                     HISTORY_DB_PATH, EFFICIENCY_REPORT_PATH,
@@ -99,6 +101,36 @@ def regenerate_history_from_dbs():
 
 
 @file_access_handler
+def check_industry_version_upgrade(sheet_name, industry_db_path):
+    """检查 IndustryDB 中指定 Sheet 是否为旧 API 截断数据（正好100条），若是则删除旧 Sheet"""
+    if not os.path.exists(industry_db_path):
+        return
+
+    try:
+        wb = load_workbook(industry_db_path)
+        if sheet_name not in wb.sheetnames:
+            wb.close()
+            return
+
+        ws = wb[sheet_name]
+        # max_row - 1 排除表头
+        if ws.max_row - 1 == 100:
+            logging.warning(
+                f"IndustryDB Sheet {sheet_name} 仅有 100 条数据（旧 API v1 限制），将删除并重新写入")
+            print(
+                f"⚠️ IndustryDB Sheet {sheet_name} 仅有 100 条数据（旧 API v1 限制），将更新为完整数据")
+            del wb[sheet_name]
+            wb.save(industry_db_path)
+            wb.close()
+            print(f"✅ 已删除旧 Sheet: {sheet_name}")
+            logging.info(f"已删除旧 IndustryDB Sheet: {sheet_name}")
+        else:
+            wb.close()
+    except Exception as e:
+        logging.error(f"检查 IndustryDB 版本升级失败: {e}")
+
+
+@file_access_handler
 def check_and_upgrade_report():
     """检查 Efficiency_Report 是否为新版本，如果不是则升级"""
     if not os.path.exists(EFFICIENCY_REPORT_PATH):
@@ -108,15 +140,30 @@ def check_and_upgrade_report():
     try:
         xls = pd.ExcelFile(EFFICIENCY_REPORT_PATH)
         sheet_names = xls.sheet_names
-        print(f"🔍 检测到 Efficiency_Report.xlsx，当前版本: {sheet_names[0] if sheet_names else '未知'}")
+        old_sheet_name = sheet_names[0] if sheet_names else None
+        print(f"🔍 检测到 Efficiency_Report.xlsx，当前版本: {old_sheet_name or '未知'}")
 
-        # === 简单判断：sheetname是否是现在的版本号 ===
-        if sheet_names and sheet_names[0] == f"v{VERSION}":
+        # 已是最新版本
+        if old_sheet_name == f"v{VERSION}":
             logging.info(f"✅ Efficiency_Report 已是最新版本 (Sheet: {f'v{VERSION}'})")
+            xls.close()
             return True
         xls.close()
 
-        logging.warning("⚠️ 检测到旧版本 Efficiency_Report，正在进行升级...")
+        # v1.5 之后格式：Sheet 名以 vX.X 开头，只需重命名
+        if old_sheet_name and re.match(r'^v\d+\.\d+$', old_sheet_name):
+            logging.warning(f"⚠️ 检测到旧版本 {old_sheet_name}，只需重命名 Sheet...")
+            print(f"⚠️ 检测到旧版本 {old_sheet_name}，正在升级 Sheet 名称...")
+            wb = load_workbook(EFFICIENCY_REPORT_PATH)
+            wb[old_sheet_name].title = f"v{VERSION}"
+            wb.save(EFFICIENCY_REPORT_PATH)
+            wb.close()
+            logging.info(f"✅ 报表 Sheet 已从 {old_sheet_name} 升级到 v{VERSION}")
+            print(f"✅ 报表 Sheet 已从 {old_sheet_name} 升级到 v{VERSION}")
+            return True
+
+        # v1.4 及之前：完整备份并重建
+        logging.warning("⚠️ 检测到旧版本 Efficiency_Report（非 vX.X 格式），正在进行完整升级...")
 
         shutil.copy2(HISTORY_DB_PATH, BACKUP_HISTORY_DB_PATH)
         shutil.copy2(EFFICIENCY_REPORT_PATH, BACKUP_EFFICIENCY_REPORT_PATH)

@@ -50,8 +50,40 @@ def fetch_company_data(company_id, api_key):
 
 
 def fetch_industry_data(industry_id, api_key):
-    url = f"https://api.torn.com/company/{industry_id}?selections=companies&key={api_key}"
-    return fetch_with_retry(url)
+    """使用 v2 API 分页获取行业全部公司数据"""
+    all_companies = []
+    offset = 0
+    limit = 100
+    companies_timestamp = None
+    companies_delay = None
+
+    while True:
+        url = f"https://api.torn.com/v2/company/{industry_id}/companies?limit={limit}&offset={offset}&striptags=false&key={api_key}"
+        response = fetch_with_retry(url)
+
+        if "error" in response:
+            return response
+
+        companies = response.get("companies", [])
+        all_companies.extend(companies)
+
+        if companies_timestamp is None:
+            companies_timestamp = response.get("companies_timestamp")
+            companies_delay = response.get("companies_delay")
+
+        # 检查是否有下一页
+        links = response.get("_metadata", {}).get("links", {})
+        next_url = links.get("next")
+        if not next_url or len(companies) == 0:
+            break
+
+        offset += limit
+
+    return {
+        "companies": all_companies,
+        "companies_timestamp": companies_timestamp,
+        "companies_delay": companies_delay,
+    }
 
 
 def fetch_user_data(user_id, api_key):

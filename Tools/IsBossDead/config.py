@@ -2,11 +2,12 @@ import platform
 import requests
 
 
-VERSION = "1.0"
+VERSION = "1.1"
 # version 0.1: 初始版本，核心功能实现，已启用速率控制，日志记录，结果输出等基础功能。
 # version 0.2: 增加了最小星级过滤功能, 增加了Director Faction信息, 加快了API请求频率。
 # version 1.0: v1.0 正式发布，新增Database缓存机制，缓存所有公司的老板last_action时间戳，
 #             运行时先查缓存，离线未达阈值的老板直接跳过，大幅减少API请求频率。
+# version 1.1: 行业数据 API 从 v1 升级到 v2，支持分页获取全部行业公司数据（突破旧版 100 条限制）
 
 # 文件路径配置
 # 这里定义了日志文件的目录，实际日志文件名会在 logger.py 中根据时间戳动态生成

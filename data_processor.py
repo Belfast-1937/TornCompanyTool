@@ -77,24 +77,28 @@ def get_employee_personalstats(response):
 
 
 def get_industry_companies(response):
-    """提取指定行业内的公司数据"""
-    companies = response.get('company', [])
+    """提取指定行业内的公司数据（适配 v2 API 嵌套结构）"""
+    companies = response.get('companies', [])
     if not companies:
         logging.warning("未获取到 companies 数据")
         return pd.DataFrame()
     rows = []
     for info in companies:
+        director_info = info.get('director', {})
+        income_info = info.get('income', {})
+        customers_info = info.get('customers', {})
+        employees_info = info.get('employees', {})
         rows.append({
-            'CompanyID': info.get('ID', 0),
+            'CompanyID': info.get('id', 0),
             'Name': info.get('name', 'Unknown'),
-            'Director': info.get('director'),
+            'Director': director_info.get('name', 'Unknown') if isinstance(director_info, dict) else director_info,
             'Stars': info.get('rating', 0),
-            'Daily_Income': info.get('daily_income', 0),
-            'Weekly_Income': info.get('weekly_income', 0),
-            'Daily_Customers': info.get('daily_customers', 0),
-            'Weekly_Customers': info.get('weekly_customers', 0),
-            'Employees_Hired': info.get('employees_hired', 0),
-            'Employees_Capacity': info.get('employees_capacity', 0),
+            'Daily_Income': income_info.get('daily', 0),
+            'Weekly_Income': income_info.get('weekly', 0),
+            'Daily_Customers': customers_info.get('daily', 0),
+            'Weekly_Customers': customers_info.get('weekly', 0),
+            'Employees_Hired': employees_info.get('hired', 0),
+            'Employees_Capacity': employees_info.get('capacity', 0),
             'Days_Old': info.get('days_old', 0),
         })
 

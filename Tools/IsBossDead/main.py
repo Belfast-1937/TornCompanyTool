@@ -230,26 +230,26 @@ def main():
 
     # 1. 获取行业公司列表
     industry_data = fetch_industry_data(industry_id, api_key)
-    if 'error' in industry_data or not isinstance(industry_data.get('company'), list):
+    if 'error' in industry_data or not isinstance(industry_data.get('companies'), list):
         print("❌ 获取行业数据失败")
         return
 
-    # API 返回的是列表，转换为以公司 ID 为 key 的字典以兼容后续代码
-    companies_list = industry_data['company']
-    companies = {str(c['ID']): c for c in companies_list}
+    # v2 API 返回的是列表，转换为以公司 ID 为 key 的字典以兼容后续代码
+    companies_list = industry_data['companies']
+    companies = {str(c['id']): c for c in companies_list}
     print(f"行业共有 {len(companies)} 家公司\n")
 
-    # 2. 筛选有员工的公司
+    # 2. 筛选有员工的公司（适配 v2 API 嵌套结构）
     candidates = [
         {
             'company_id': int(cid),
             'name': info.get('name'),
-            'director_id': info.get('director'),
-            'employees_hired': info.get('employees_hired', 0),
-            'daily_income': info.get('daily_income', 0)
+            'director_id': info.get('director', {}).get('id') if isinstance(info.get('director'), dict) else info.get('director'),
+            'employees_hired': info.get('employees', {}).get('hired', 0),
+            'daily_income': info.get('income', {}).get('daily', 0)
         }
         for cid, info in companies.items()
-        if info.get('employees_hired', 0) > 0 and info.get('rating', 0) >= minimum_star_rating
+        if info.get('employees', {}).get('hired', 0) > 0 and info.get('rating', 0) >= minimum_star_rating
     ]
 
     if not candidates:
