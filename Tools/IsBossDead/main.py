@@ -230,11 +230,13 @@ def main():
 
     # 1. 获取行业公司列表
     industry_data = fetch_industry_data(industry_id, api_key)
-    if 'error' in industry_data or not isinstance(industry_data.get('company'), dict):
+    if 'error' in industry_data or not isinstance(industry_data.get('company'), list):
         print("❌ 获取行业数据失败")
         return
 
-    companies = industry_data['company']
+    # API 返回的是列表，转换为以公司 ID 为 key 的字典以兼容后续代码
+    companies_list = industry_data['company']
+    companies = {str(c['ID']): c for c in companies_list}
     print(f"行业共有 {len(companies)} 家公司\n")
 
     # 2. 筛选有员工的公司
