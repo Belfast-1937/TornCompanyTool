@@ -45,6 +45,14 @@
 - 自动查询目标公司老板的派系信息
 - 输出 Excel 格式的候选公司列表，包含直达公司页面的链接
 
+#### IndustryViewer — 行业公司数据查询工具
+- 单文件 HTML，直接在浏览器打开即可使用
+- 查询 Torn 任意行业所有公司数据（排名、星级、收入、客户、员工等）
+- 支持排序、分页、模糊搜索（公司名称 / ID）
+- 星级分布分析与晋升门槛预估
+- 半透明卡片 + 鼠标探照灯效果，背景图清晰可见
+- 暗色模式、移动端适配、打印友好
+
 ---
 
 ## 📋 核心工具：生成文件说明
@@ -294,6 +302,11 @@ TornCompanyTool/
 │   │   ├── report.py           #    报告生成
 │   │   ├── output.ico          #    打包用图标
 │   │   └── reports/            #    规划报告输出（自动创建）
+│   ├── IndustryViewer/           # 行业公司数据查询工具
+│   │   ├── IndustryViewer.html            # 主文件（单文件 HTML）
+│   │   ├── IndustryViewer_Template.html   # 模板文件（修改后重新生成用）
+│   │   ├── _build.py                      # 构建脚本（模板→最终HTML）
+│   │   └── README.md                      # 工具说明文档
 │   └── IsBossDead/             # 行业招聘侦查工具
 │       ├── main.py             #    程序入口
 │       ├── api_client.py       #    API 请求与限流
@@ -346,6 +359,7 @@ TornCompanyTool/
 | IsBossDead | v0.2 | 2026-05-22 | 增加最小星级过滤、Director Faction 信息、加快请求频率 |
 | IsBossDead | v1.0 | 2026-05-31 | 新增老板状态数据库缓存机制，大幅减少重复扫描时的 API 请求量 |
 | IsBossDead | v1.1 | 2026-06-02 | 行业数据 API 升级到 v2，支持分页获取全部行业公司数据 |
+| IndustryViewer | v1.0 | 2026-06-03 | 初始发布，含公司查询、排序、分页、搜索、星级分析、半透明UI、鼠标探照灯 |
 
 ---
 
