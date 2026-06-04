@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """PySide6 GUI 应用"""
 import os
+import sys
 import threading
 
 from PySide6.QtWidgets import (
@@ -9,13 +10,14 @@ from PySide6.QtWidgets import (
     QTableWidget, QTableWidgetItem, QHeaderView, QMessageBox
 )
 from PySide6.QtCore import Qt, Signal, QObject
-from PySide6.QtGui import QPixmap, QPainter, QPalette, QBrush
+from PySide6.QtGui import QPixmap, QPainter, QPalette, QBrush, QIcon
 
 from constants import COMPANIES_DATA, SCRIPT_DIR
 from api_client import fetch_company_data, parse_employees, parse_company_type
 from trainer import find_best_training_job, calc_trains_to_next_point
 from config import load_config, save_config, clear_config
 from report import generate_report
+
 
 _BG_PATH = "./background.png"
 
@@ -44,8 +46,24 @@ class TrainingPlannerApp(QMainWindow):
         self._signals.fetch_error.connect(self._on_fetch_error)
 
         self._apply_background()
+        self._set_window_icon()
         self._build_ui()
         self._load_config()
+
+    # ---- 图标 ----
+
+    def _set_window_icon(self):
+        """设置窗口图标（任务栏和标题栏）。"""
+        # 优先从 PyInstaller 打包目录 (_MEIPASS) 查找，其次从脚本目录查找
+        if getattr(sys, 'frozen', False):
+            base_dirs = [sys._MEIPASS, SCRIPT_DIR]
+        else:
+            base_dirs = [SCRIPT_DIR]
+        for base in base_dirs:
+            icon_path = os.path.join(base, "output.ico")
+            if os.path.isfile(icon_path):
+                self.setWindowIcon(QIcon(icon_path))
+                return
 
     # ---- 背景 ----
 
