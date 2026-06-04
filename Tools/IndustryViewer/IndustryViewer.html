@@ -956,13 +956,12 @@ function showAnalysis() {
       if (pt.thresholdWeekly === 0 && pt.quotaFrom > totalCount) continue;
       const s = pt.fromStar;
       const target = pt.toStar;
-      const targetStars = "★".repeat(Math.min(target, 10));
       const count = pt.quotaTo - pt.quotaFrom + 1;
       html += `<tr>
         <td class="center" style="font-weight:600;">
-          <span class="stars-gold" style="font-size:12px;">${"★".repeat(Math.min(s, 10))}</span>
+          <span class="stars-gold" style="font-size:12px;">${s}★</span>
           <span style="margin:0 2px;">→</span>
-          <span class="stars-gold" style="font-size:12px;">${targetStars}</span>
+          <span class="stars-gold" style="font-size:12px;">${target}★</span>
         </td>
         <td class="center">${count}家</td>
         <td class="num" style="font-weight:600;color:#1677ff;">${pt.thresholdWeekly > 0 ? `$${pt.thresholdWeekly.toLocaleString()}` : "—"}</td>
