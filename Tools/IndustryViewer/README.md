@@ -1,5 +1,7 @@
 # IndustryViewer - Torn 行业公司数据查询工具
 
+**当前版本：v1.1**
+
 ## 概述
 
 单文件 HTML 工具，用于查询 Torn 游戏中指定行业所有公司的详细数据，包括排名、星级、收入、客户数、员工信息等，并提供星级分布分析与晋升门槛预估功能。
@@ -90,9 +92,18 @@ python _build.py
 1. 读取 `IndustryViewer_Template.html`
 2. 读取 `IndustryViewer_Template.css` → 注入 `<!--INJECT_CSS-->`
 3. 读取 `IndustryViewer_Template.js` → 注入 `<!--INJECT_JS-->`
-4. 读取背景图片 → base64 编码 → 替换 `BG64_PLACEHOLDER_WILL_BE_REPLACED_BY_SCRIPT`
-5. 写入 `IndustryViewer.html`
+4. 注入版本号到 JS（`/*INJECT_VERSION*/` → 实际版本）
+5. 读取背景图片 → base64 编码 → 替换 `BG64_PLACEHOLDER_WILL_BE_REPLACED_BY_SCRIPT`
+6. 注入版本号到 HTML 注释（`</head>` 前）
+7. 写入 `IndustryViewer.html`
 
 > 🚫 **严格禁止直接读取或编辑 `IndustryViewer.html`**。该文件是 `_build.py` 的构建产物，所有修改必须针对 `*_Template.*` 源文件，修改后运行 `_build.py` 重新生成。
+
+## 更新日志
+
+| 版本 | 日期 | 更新内容 |
+|------|------|---------|
+| v1.1 | 2026-06-04 | 重构为多文件注入构建模式；CSS/JS 分离为独立模板文件；新增 API Key 本地存储（localStorage）；背景图片泛化命名；版本号注入（HTML 注释 + 控制台输出） |
+| v1.0 | 2026-06-03 | 初始发布，含公司查询、排序、分页、搜索、星级分析、半透明UI、鼠标探照灯 |
 
 ## 许可

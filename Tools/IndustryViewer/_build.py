@@ -15,6 +15,7 @@ import os
 import sys
 import base64
 
+VERSION = "1.1"
 BASE = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -54,7 +55,10 @@ def main():
         sys.exit(1)
     html = html.replace('<!--INJECT_JS-->', f'\n{js}\n  ')
 
-    # 4. Inject base64 PNG
+    # 4. Inject version into JS (console.log)
+    html = html.replace('/*INJECT_VERSION*/', f'"{VERSION}"')
+
+    # 5. Inject base64 PNG
     png_data = read_binary('background.png')
     b64 = base64.b64encode(png_data).decode()
     html = html.replace(
@@ -62,7 +66,10 @@ def main():
         f'url("data:image/png;base64,{b64}")'
     )
 
-    # 5. Write output
+    # 6. Inject version HTML comment
+    html = html.replace('</head>', f'  <!-- IndustryViewer v{VERSION} -->\n</head>')
+
+    # 7. Write output
     final_path = os.path.join(BASE, 'IndustryViewer.html')
     with open(final_path, 'w', encoding='utf-8') as f:
         f.write(html)
@@ -79,6 +86,7 @@ def main():
             print(f'  FAIL: {msg}', file=sys.stderr)
             passed = False
 
+    print(f'Version: v{VERSION}')
     print(f'Output: {len(html)} bytes')
     print(f'  base64 injected: {"data:image/png;base64," in html}')
     print(f'  radial-gradient: {html.count("radial-gradient")}')
@@ -88,6 +96,7 @@ def main():
     print(f'  loadSavedApiKey: {html.count("loadSavedApiKey")}')
     print(f'  INJECT_CSS resolved: {"<!--INJECT_CSS-->" not in html}')
     print(f'  INJECT_JS resolved: {"<!--INJECT_JS-->" not in html}')
+    print(f'  version injected: {"<!-- IndustryViewer v" in html}')
 
     if passed:
         print('BUILD COMPLETE')

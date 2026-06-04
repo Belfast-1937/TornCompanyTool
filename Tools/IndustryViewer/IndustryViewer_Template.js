@@ -637,6 +637,7 @@ document.body.style.setProperty("--my", "50%");
 
 // Enter 键触发查询
 document.addEventListener("DOMContentLoaded", () => {
+  console.log("IndustryViewer v" + /*INJECT_VERSION*/);
   initIndustrySelect();
   loadSavedApiKey();
   document.getElementById("apikey-input").addEventListener("keydown", (e) => {

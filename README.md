@@ -303,10 +303,13 @@ TornCompanyTool/
 │   │   ├── output.ico          #    打包用图标
 │   │   └── reports/            #    规划报告输出（自动创建）
 │   ├── IndustryViewer/           # 行业公司数据查询工具
-│   │   ├── IndustryViewer.html            # 主文件（单文件 HTML）
-│   │   ├── IndustryViewer_Template.html   # 模板文件（修改后重新生成用）
-│   │   ├── _build.py                      # 构建脚本（模板→最终HTML）
-│   │   └── README.md                      # 工具说明文档
+│   │   ├── IndustryViewer.html                # 最终发布文件（构建产物，禁止直接编辑）
+│   │   ├── IndustryViewer_Template.html       # HTML 骨架（含占位符）
+│   │   ├── IndustryViewer_Template.css        # 样式模板（独立维护）
+│   │   ├── IndustryViewer_Template.js         # 逻辑模板（独立维护）
+│   │   ├── background.png                     # 背景图片
+│   │   ├── _build.py                          # 构建脚本（模板→最终HTML）
+│   │   └── README.md                          # 工具说明文档
 │   └── IsBossDead/             # 行业招聘侦查工具
 │       ├── main.py             #    程序入口
 │       ├── api_client.py       #    API 请求与限流
@@ -360,6 +363,7 @@ TornCompanyTool/
 | IsBossDead | v1.0 | 2026-05-31 | 新增老板状态数据库缓存机制，大幅减少重复扫描时的 API 请求量 |
 | IsBossDead | v1.1 | 2026-06-02 | 行业数据 API 升级到 v2，支持分页获取全部行业公司数据 |
 | IndustryViewer | v1.0 | 2026-06-03 | 初始发布，含公司查询、排序、分页、搜索、星级分析、半透明UI、鼠标探照灯 |
+| IndustryViewer | v1.1 | 2026-06-04 | 重构为多文件注入构建模式，CSS/JS 分离为独立模板，新增 API Key 本地存储 |
 
 ---
 
