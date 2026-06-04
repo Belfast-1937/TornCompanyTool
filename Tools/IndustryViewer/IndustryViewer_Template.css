@@ -1,0 +1,255 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background-color: #f5f5f5;
+  background-image: BG64_PLACEHOLDER_WILL_BE_REPLACED_BY_SCRIPT;
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+"Noto Sans SC", "HarmonyOS Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  padding: 24px;
+  color: #333;
+  position: relative;
+  transition: none;
+}
+/* 背景遮罩层，鼠标周围透明显示背景 */
+body::before {
+  content: "";
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(circle 160px at var(--mx, 50%) var(--my, 50%), transparent 0%, rgba(255,255,255,0.78) 70%);
+  z-index: 0; pointer-events: none;
+}
+.app-container, .modal-overlay { position: relative; z-index: 1; }
+.app-container { max-width: 1400px; margin: 0 auto; }
+.app-header {
+  background: rgba(255,255,255,0.85);
+  padding: 20px 24px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+.app-header h1 { font-size: 22px; color: #1a1a2e; margin-bottom: 16px; }
+.search-form { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.search-form .form-item { flex: 1; min-width: 200px; }
+.search-form .form-item-short { flex: 0 0 160px; min-width: 140px; }
+.search-form .form-item label {
+  display: block; margin-bottom: 4px; font-size: 13px; color: #888;
+}
+.search-form .form-item input, .search-form .form-item select {
+  width: 100%; padding: 10px 12px; font-size: 15px;
+  border: 1px solid #d9d9d9; border-radius: 6px; outline: none;
+  transition: border-color 0.2s; background: rgba(255,255,255,0.85); color: #333;
+}
+.search-form .form-item input:focus,
+.search-form .form-item select:focus { border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22,119,255,0.1); }
+.btn {
+  padding: 10px 24px; font-size: 15px; border: none; border-radius: 6px;
+  cursor: pointer; color: #fff; font-weight: 500;
+  white-space: nowrap; transition: opacity 0.2s; min-width: 90px;
+}
+.btn-primary { background: #1677ff; }
+.btn-success { background: #52c41a; }
+.btn-warning { background: #faad14; color: #333; }
+.btn-danger { background: #ff4d4f; }
+.btn:hover { opacity: 0.85; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-group { display: flex; gap: 8px; align-items: flex-end; }
+.btn-group > div { display: flex; flex-direction: column; }
+
+.api-key-row { display: flex; gap: 8px; align-items: flex-end; }
+.api-key-row .form-item { flex: 1; min-width: 200px; }
+.api-key-row .btn-group { flex: 0 0 auto; }
+
+.table-container {
+  background: rgba(255,255,255,0.85); padding: 24px; border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08); overflow-x: auto;
+}
+
+table {
+  width: 100%; border-collapse: collapse; font-size: 14px;
+  min-width: 1400px;
+}
+thead th {
+  background: rgba(250,250,250,0.78); border-bottom: 2px solid #f0f0f0;
+  padding: 10px 12px; text-align: left; white-space: nowrap;
+  cursor: pointer; user-select: none; position: sticky; top: 0;
+  font-weight: 600; color: #333;
+}
+thead th:hover { background: #f0f0f0; }
+thead th .sort-arrow { margin-left: 4px; font-size: 11px; color: #aaa; }
+thead th.sorted .sort-arrow { color: #1677ff; }
+tbody td {
+  padding: 8px 12px; border-bottom: 1px solid #f0f0f0;
+  white-space: nowrap;
+}
+tbody tr:hover { background: #fafafa; }
+tbody a { color: #1677ff; text-decoration: none; font-weight: 500; }
+tbody a:hover { text-decoration: underline; }
+.num { text-align: right; }
+.center { text-align: center; }
+
+/* 搜索高亮 */
+.highlight { background: #fff3b0; padding: 0 1px; border-radius: 2px; }
+
+/* 分页 */
+.pagination {
+  display: flex; justify-content: flex-end; align-items: center;
+  margin-top: 16px; gap: 6px; flex-wrap: wrap; font-size: 13px;
+}
+.pagination button {
+  border: 1px solid #d9d9d9; background: rgba(255,255,255,0.75); border-radius: 4px;
+  padding: 5px 10px; cursor: pointer; color: #333;
+  min-height: 32px;
+}
+.pagination button:hover { border-color: #1677ff; color: #1677ff; }
+.pagination button.active {
+  background: #1677ff; color: #fff; border-color: #1677ff;
+}
+.pagination button:disabled { color: #ccc; cursor: not-allowed; }
+.pagination select {
+  padding: 5px 8px; border: 1px solid #d9d9d9; border-radius: 4px;
+  min-height: 32px; background: rgba(255,255,255,0.75); color: #333;
+}
+.pagination .info { color: #888; margin-left: 8px; }
+
+.search-result-info {
+  padding: 8px 12px; margin-bottom: 12px; background: rgba(230,247,255,0.80);
+  border: 1px solid #91d5ff; border-radius: 4px; font-size: 13px; color: #1677ff;
+}
+.search-result-info button {
+  background: none; border: none; color: #1677ff; cursor: pointer;
+  font-size: 13px; text-decoration: underline; padding: 0; margin-left: 8px;
+}
+
+/* 状态 */
+.loading-box { text-align: center; padding: 80px 0; }
+.spinner {
+  display: inline-block; width: 40px; height: 40px;
+  border: 4px solid #e0e0e0; border-top-color: #1677ff;
+  border-radius: 50%; animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-box p { margin-top: 16px; color: #888; }
+
+.empty-box { text-align: center; padding: 80px 0; color: #999; }
+.empty-box .icon { font-size: 48px; margin-bottom: 12px; }
+.error-box { text-align: center; padding: 40px 0; color: #ff4d4f; }
+
+.stars-gold { color: #faad14; font-size: 15px; letter-spacing: 1px; }
+
+/* 模态对话框 */
+.modal-overlay {
+  display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.45); z-index: 1000;
+  justify-content: center; align-items: center; padding: 16px;
+}
+.modal-overlay.active { display: flex; }
+.modal {
+  background: rgba(255,255,255,0.90); border-radius: 8px; width: 96%; max-width: 1300px;
+  max-height: 94vh; display: flex; flex-direction: column;
+  box-shadow: 0 6px 30px rgba(0,0,0,0.2);
+}
+.modal-header {
+  padding: 12px 20px; border-bottom: 1px solid #f0f0f0;
+  display: flex; justify-content: space-between; align-items: center;
+  flex-shrink: 0;
+}
+.modal-header h2 { font-size: 17px; color: #1a1a2e; }
+.modal-close {
+  background: none; border: none; font-size: 20px; cursor: pointer;
+  color: #999; padding: 4px 8px; border-radius: 4px; min-height: 32px;
+}
+.modal-close:hover { background: #f0f0f0; color: #333; }
+.modal-body { padding: 12px 20px; overflow-y: auto; flex: 1; }
+.modal-body h3 { font-size: 15px; margin-bottom: 8px !important; }
+.modal-body table { min-width: 750px; }
+.modal-body td, .modal-body th { font-size: 12px; padding: 6px 8px; }
+.threshold-bar {
+  display: inline-block; height: 6px; border-radius: 3px;
+  background: #1677ff; vertical-align: middle; margin-right: 4px;
+}
+.note {
+  font-size: 11px; color: #888; margin-top: 10px;
+  padding: 8px 12px; background: rgba(255,251,230,0.85); border: 1px solid #ffe58f;
+  border-radius: 4px;
+}
+
+/* 移动端 */
+@media (max-width: 768px) {
+  body { padding: 8px; }
+  .app-header { padding: 12px 16px; }
+  .table-container { padding: 12px 8px; }
+  .search-form { flex-direction: column; }
+  .search-form .form-item { min-width: 100%; }
+  .search-form .form-item-short { flex: 1; min-width: 100%; }
+  .btn-group { flex-direction: column; width: 100%; }
+  .btn-group > div { width: 100%; }
+  .btn-group > div button,
+  .btn-group > div .btn { width: 100%; min-height: 44px; }
+  .api-key-row { flex-direction: column; width: 100%; }
+  .api-key-row .form-item { min-width: 100%; }
+  .api-key-row .btn-group { width: 100%; flex-direction: row; }
+  .api-key-row .btn-group button { flex: 1; min-height: 44px; }
+  .pagination button { min-height: 44px; min-width: 44px; padding: 8px 12px; }
+  .pagination select { min-height: 44px; }
+  tbody td, thead th { padding: 6px 8px; font-size: 12px; }
+  .modal { width: 95%; max-height: 90vh; }
+  .modal-body { padding: 12px 16px; }
+  .modal-close { min-height: 44px; min-width: 44px; }
+}
+
+/* 暗色模式 */
+@media (prefers-color-scheme: dark) {
+  body { background-color: #1a1a2e; color: #e0e0e0; }
+body::before { background: radial-gradient(circle 160px at var(--mx, 50%) var(--my, 50%), transparent 0%, rgba(0,0,0,0.62) 70%); }
+  .app-header,
+  .table-container,
+  .modal {
+    background: rgba(22,33,62,0.80);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+  .app-header h1,
+  .modal-header h2 { color: #e0e0e0; }
+  thead th {
+    background: rgba(26,26,62,0.78); border-bottom-color: #2a2a4e; color: #ccc;
+  }
+  thead th:hover { background: #24244e; }
+  tbody td { border-bottom-color: #2a2a4e; color: #ddd; }
+  tbody tr:hover { background: #1e2a4a; }
+  .pagination button {
+    background: rgba(26,26,62,0.73); border-color: #3a3a5e; color: #ccc;
+  }
+  .pagination button:hover { border-color: #1677ff; color: #1677ff; }
+  .pagination button.active { background: #1677ff; color: #fff; }
+  .pagination select { background: rgba(26,26,62,0.73); color: #ccc; border-color: #3a3a5e; }
+  .search-form .form-item input,
+  .search-form .form-item select {
+    background: rgba(26,26,62,0.73); color: #ddd; border-color: #3a3a5e;
+  }
+  .search-form .form-item input:focus,
+  .search-form .form-item select:focus { border-color: #1677ff; }
+  .search-form .form-item label { color: #aaa; }
+  .search-result-info { background: rgba(22,119,255,0.15); border-color: rgba(22,119,255,0.3); }
+  .note { background: rgba(250,173,20,0.1); border-color: rgba(250,173,20,0.3); color: #bbb; }
+  .modal-header { border-bottom-color: #2a2a4e; }
+  .modal-close:hover { background: #2a2a4e; color: #ddd; }
+  .highlight { background: rgba(250,173,20,0.3); }
+  .btn-group > div label { color: #aaa; }
+  #search-bar input { background: rgba(26,26,62,0.73); color: #ddd; border-color: #3a3a5e; }
+}
+
+/* 打印样式 */
+@media print {
+  body { background: #fff; padding: 0; font-size: 10px; }
+  .app-header { box-shadow: none; border-bottom: 2px solid #000; border-radius: 0; }
+  .search-form, .btn-group, .btn, #search-bar, .pagination,
+  .modal-overlay, .spinner, .search-result-info button { display: none !important; }
+  .table-container { box-shadow: none; padding: 0; overflow-x: visible; }
+  table { min-width: 100%; font-size: 8px; }
+  thead th, tbody td { padding: 2px 4px; border: 1px solid #ccc; }
+  tbody a { color: #000; text-decoration: none; }
+  tbody a::after { content: " (" attr(href) ")"; font-size: 7px; color: #666; }
+  .highlight { background: none; font-weight: bold; }
+  thead th .sort-arrow { display: none; }
+}

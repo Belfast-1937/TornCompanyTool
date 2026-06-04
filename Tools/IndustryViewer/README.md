@@ -11,9 +11,10 @@
 ## 功能
 
 ### 1. 行业公司数据查询
-- 支持 40 个 Torn 行业的完整列表
-- 输入 Torn API Key（v2），一次性拉取行业内所有公司
+- 支持 39 个 Torn 行业的完整列表（ID 1-40，缺 17）
+- 输入 Torn Public API Key（公开只读即可），一次性拉取行业内所有公司
 - 数据包括：排名、公司ID、名称、董事、星级、日/周收入、日/周客户、员工雇佣/容量、成立天数
+- API Key 支持本地存储（`localStorage`），保存/清除前均有确认提示
 
 ### 2. 数据浏览与排序
 - 点击任意列表头可按该列升序/降序排序
@@ -60,39 +61,38 @@ GET https://api.torn.com/v2/company/{industry_id}/companies
 ```
 
 - 自动处理分页（`limit=100, offset`）
-- API Key 不会持久化存储，仅在当前会话有效
+- API Key 可通过"保存"按钮存入浏览器 `localStorage`（明文存储，有安全提示）
 - 支持 AbortController 取消请求
 
 ## 文件结构
 
 ```
 Tools/IndustryViewer/
-├── IndustryViewer.html          # 主文件（单文件 HTML，含 base64 背景图）
-├── IndustryViewer_Template.html # 模板文件（图片占位符，用于修改后重新生成）
-└── README.md                    # 本文档
+├── IndustryViewer.html                # 最终发布文件（构建产物，禁止直接编辑）
+├── IndustryViewer_Template.html       # HTML 骨架（含 INJECT_CSS 和 INJECT_JS 占位符）
+├── IndustryViewer_Template.css        # 样式模板（独立维护）
+├── IndustryViewer_Template.js         # 逻辑模板（独立维护）
+├── background.png                     # 背景图片
+├── _build.py                          # 构建脚本
+└── README.md                          # 本文档
 ```
 
-## 重新生成
+## 构建
 
-如果修改了 `IndustryViewer_Template.html`，运行以下 Python 脚本重新注入背景图：
+修改任意 `*_Template.*` 源文件后，运行构建脚本重新生成 `IndustryViewer.html`：
 
-```python
-import base64
-with open("background.png", "rb") as f:
-    b64 = base64.b64encode(f.read()).decode()
-with open("IndustryViewer_Template.html", encoding="utf-8") as f:
-    html = f.read()
-html = html.replace("BG64_PLACEHOLDER_WILL_BE_REPLACED_BY_SCRIPT", f'url("data:image/png;base64,{b64}")')
-with open("IndustryViewer.html", "w", encoding="utf-8") as f:
-    f.write(html)
+```bash
+cd Tools/IndustryViewer
+python _build.py
 ```
 
-## 更新日志
+构建流程：
+1. 读取 `IndustryViewer_Template.html`
+2. 读取 `IndustryViewer_Template.css` → 注入 `<!--INJECT_CSS-->`
+3. 读取 `IndustryViewer_Template.js` → 注入 `<!--INJECT_JS-->`
+4. 读取背景图片 → base64 编码 → 替换 `BG64_PLACEHOLDER_WILL_BE_REPLACED_BY_SCRIPT`
+5. 写入 `IndustryViewer.html`
 
-- **v1.0** (2026-06-03)
-  - 初始版本
-  - 包含公司查询、排序、分页、搜索、星级分析等完整功能
-  - 多平台支持、暗色模式、打印样式、无障碍
-  - 背景配图与鼠标探照灯效果
+> 🚫 **严格禁止直接读取或编辑 `IndustryViewer.html`**。该文件是 `_build.py` 的构建产物，所有修改必须针对 `*_Template.*` 源文件，修改后运行 `_build.py` 重新生成。
 
 ## 许可

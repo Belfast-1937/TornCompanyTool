@@ -217,7 +217,7 @@ IndustryID = Your_IndustryID_Here
 ```
 
 - API Key 使用 **Public Access Key** 即可
-- 内置 40 种行业的完整 ID 列表（注释在配置文件末尾）
+- 内置 39 种行业的完整 ID 列表（注释在配置文件末尾，ID 1-40 但缺17）
 
 ### 运行
 ```bash

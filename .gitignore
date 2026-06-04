@@ -39,3 +39,4 @@ logs
 *.png
 test.py
 *report*
+PromptSpec*
