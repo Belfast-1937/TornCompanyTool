@@ -15,6 +15,9 @@ from config import RESULT_DIR, DB_DIR
 @file_access_handler
 def get_config():
     """读取配置文件"""
+    boss_days = 3
+    emp_days = 1
+    minimum_star_rating = 3
     config = configparser.ConfigParser()
     ini_file = 'Industry.ini'
 
@@ -101,7 +104,6 @@ def load_boss_database(industry_id):
         dict 或 None: {company_id: {'director_id': int, 'boss_last_action_ts': int}}
     """
     try:
-        os.makedirs(DB_DIR, exist_ok=True)
         db_file = os.path.join(DB_DIR, f"Industry_BossDB_{industry_id}.xlsx")
         if not os.path.exists(db_file):
             logging.info("数据库文件不存在，所有公司将请求API")
@@ -140,7 +142,6 @@ def save_boss_database(industry_id, db_data):
         db_data: {company_id: {'director_id': int, 'boss_last_action_ts': int}}
     """
     try:
-        os.makedirs(DB_DIR, exist_ok=True)
         db_file = os.path.join(DB_DIR, f"Industry_BossDB_{industry_id}.xlsx")
 
         rows = []
