@@ -23,12 +23,12 @@ body::before {
 .app-container { max-width: 1400px; margin: 0 auto; }
 .app-header {
   background: rgba(255,255,255,0.85);
-  padding: 20px 24px;
+  padding: 16px 20px;
   border-radius: 8px;
   margin-bottom: 16px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.08);
 }
-.app-header h1 { font-size: 22px; color: #1a1a2e; margin-bottom: 16px; }
+.app-header h1 { font-size: 22px; color: #1a1a2e; margin-bottom: 10px; }
 .search-form { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
 .search-form .form-item { flex: 1; min-width: 200px; }
 .search-form .form-item-short { flex: 0 0 160px; min-width: 140px; }
@@ -80,7 +80,7 @@ thead th:hover { background: #f0f0f0; }
 thead th .sort-arrow { margin-left: 4px; font-size: 11px; color: #aaa; }
 thead th.sorted .sort-arrow { color: #1677ff; }
 tbody td {
-  padding: 8px 12px; border-bottom: 1px solid #f0f0f0;
+  padding: 6px 10px; border-bottom: 1px solid #f0f0f0;
   white-space: nowrap;
 }
 tbody tr:hover { background: #fafafa; }
@@ -178,7 +178,7 @@ tbody a:hover { text-decoration: underline; }
 .btn-default:hover { opacity: 0.85; }
 .modal-body h3 { font-size: 15px; margin-bottom: 8px !important; }
 .modal-body table { min-width: 750px; }
-.modal-body td, .modal-body th { font-size: 12px; padding: 6px 8px; }
+.modal-body td, .modal-body th { font-size: 12px; padding: 4px 6px; }
 .threshold-bar {
   display: inline-block; height: 6px; border-radius: 3px;
   background: #1677ff; vertical-align: middle; margin-right: 4px;
