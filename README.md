@@ -288,38 +288,38 @@ TornCompanyTool/
 ├── Report/                   # 报告文件夹（自动创建）
 ├── logs/                     # 日志文件夹（自动创建）
 ├── Data/
-│   └── Torn_Company_Jobs.xlsx  # 公司岗位参考数据
-├── Tools/
-│   ├── TrainingManager/        # 员工训练规划工具
-│   │   ├── main.py             #    GUI 程序入口
-│   │   ├── gui_pyqt.py         #    PySide6 GUI 界面
-│   │   ├── api_client.py       #    Torn API 调用与数据解析
-│   │   ├── config.py           #    配置读写（JSON）
-│   │   ├── constants.py        #    常量定义
-│   │   ├── company_data.py     #    39 家公司岗位硬编码数据
-│   │   ├── efficiency.py       #    效率计算公式
-│   │   ├── trainer.py          #    训练规划引擎
-│   │   ├── report.py           #    报告生成
-│   │   ├── output.ico          #    打包用图标
-│   │   └── reports/            #    规划报告输出（自动创建）
-│   ├── IndustryViewer/           # 行业公司数据查询工具
-│   │   ├── IndustryViewer.html                # 最终发布文件（构建产物，禁止直接编辑）
-│   │   ├── IndustryViewer_Template.html       # HTML 骨架（含占位符）
-│   │   ├── IndustryViewer_Template.css        # 样式模板（独立维护）
-│   │   ├── IndustryViewer_Template.js         # 逻辑模板（独立维护）
-│   │   ├── background.png                     # 背景图片
-│   │   ├── _build.py                          # 构建脚本（模板→最终HTML）
-│   │   └── README.md                          # 工具说明文档
-│   └── IsBossDead/             # 行业招聘侦查工具
-│       ├── main.py             #    程序入口
-│       ├── api_client.py       #    API 请求与限流
-│       ├── config.py           #    配置与常量
-│       ├── logger.py           #    日志配置
-│       ├── utils.py            #    通用工具函数
-│       ├── Industry.ini        #    配置文件（需自创建）
-│       ├── output.ico          #    打包用图标
-│       ├── Database/           #    老板状态缓存（自动创建）
-│       └── Results/            #    扫描结果输出（自动创建）
+|   └──Torn_Company_Jobs.xlsx # 公司岗位参考数据
+└──Tools/
+    ├── TrainingManager/        # 员工训练规划工具
+    │   ├── main.py             #    GUI 程序入口
+    │   ├── gui_pyqt.py         #    PySide6 GUI 界面
+    │   ├── api_client.py       #    Torn API 调用与数据解析
+    │   ├── config.py           #    配置读写（JSON）
+    │   ├── constants.py        #    常量定义
+    │   ├── company_data.py     #    39 家公司岗位硬编码数据
+    │   ├── efficiency.py       #    效率计算公式
+    │   ├── trainer.py          #    训练规划引擎
+    │   ├── report.py           #    报告生成
+    │   ├── output.ico          #    打包用图标
+    │   └── reports/            #    规划报告输出（自动创建）
+    ├── IndustryViewer/         # 行业公司数据查询工具
+    │   ├── IndustryViewer.html                # 最终发布文件（构建产物，禁止直接编辑）
+    │   ├── IndustryViewer_Template.html       # HTML 骨架（含占位符）
+    │   ├── IndustryViewer_Template.css        # 样式模板（独立维护）
+    │   ├── IndustryViewer_Template.js         # 逻辑模板（独立维护）
+    │   ├── background.png                     # 背景图片
+    │   ├── _build.py                          # 构建脚本（模板→最终HTML）
+    │   └── README.md                          # 工具说明文档
+    └── IsBossDead/             # 行业招聘侦查工具
+        ├── main.py             #    程序入口
+        ├── api_client.py       #    API 请求与限流
+        ├── config.py           #    配置与常量
+        ├── logger.py           #    日志配置
+        ├── utils.py            #    通用工具函数
+        ├── Industry.ini        #    配置文件（需自创建）
+        ├── output.ico          #    打包用图标
+        ├── Database/           #    老板状态缓存（自动创建）
+        └── Results/            #    扫描结果输出（自动创建）
 ```
 
 ---

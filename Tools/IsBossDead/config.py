@@ -16,7 +16,7 @@ RESULT_DIR = "./Results"
 DB_DIR = "./Database"
 
 # ==================== 速率控制 ====================
-MIN_INTERVAL = 0.8  # 两次请求最小间隔（秒），安全且接近50次/分钟
+MIN_INTERVAL = 0.8  # 两次请求最小间隔（秒），约 75 次/分钟
 
 
 def get_user_agent():

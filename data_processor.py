@@ -296,7 +296,11 @@ def calculate_stat_day_avg(df_emp, today_date, employee_db_path, stat_column, da
 
         logging.info(f"正在加载历史数据... 目标日期: {today}")
 
+        loaded_count = 0
         for sheet in sorted(xls.sheet_names, reverse=True):
+            if loaded_count >= days:
+                break
+
             try:
                 sheet_date = pd.to_datetime(sheet).date()
                 if sheet_date >= today:
@@ -306,6 +310,7 @@ def calculate_stat_day_avg(df_emp, today_date, employee_db_path, stat_column, da
                 if 'EmployeeID' in df.columns and stat_column in df.columns:
                     history[sheet_date] = dict(
                         zip(df['EmployeeID'].astype(int), df[stat_column].astype(int)))
+                    loaded_count += 1
             except Exception as e:
                 logging.warning(f"读取 Sheet {sheet} 失败: {e}")
 
@@ -313,7 +318,7 @@ def calculate_stat_day_avg(df_emp, today_date, employee_db_path, stat_column, da
             df_emp[avg_key] = "N/A"
             return df_emp
 
-        logging.info(f"共加载 {len(history)} 天历史数据")
+        logging.info(f"共加载 {len(history)} 天历史数据（上限 {days} 天）")
 
         avg_list = []
         sorted_dates = sorted(history.keys(), reverse=True)  # 从新到旧
