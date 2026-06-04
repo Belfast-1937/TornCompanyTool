@@ -544,7 +544,7 @@ function showAnalysis() {
       const pct = stat ? stat.pct : 0;
       const barWidth = Math.max((cnt / maxCount) * 80, cnt > 0 ? 2 : 0);
       html += `<div class="mobile-star-row">
-        <span class="stars-gold">${"★".repeat(Math.min(s, 10))}</span>
+        <span class="stars-gold">${s}★</span>
         <span class="threshold-bar" style="width:${barWidth}px;height:6px;border-radius:3px;background:#1677ff;display:inline-block;vertical-align:middle;margin:0 6px;"></span>
         <span style="font-size:13px;">${cnt}家 (${pct.toFixed(1)}%)</span>
       </div>`;

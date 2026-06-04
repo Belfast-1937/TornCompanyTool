@@ -219,6 +219,9 @@ tbody a:hover { text-decoration: underline; }
   .modal { width: 95%; max-height: 90vh; }
   .modal-body { padding: 12px 16px; }
   .modal-close { min-height: 44px; min-width: 44px; }
+  .modal-body table { min-width: auto !important; }
+  .modal-body td, .modal-body th { padding: 4px 4px; font-size: 11px; }
+  .modal-body h3 { font-size: 13px !important; }
   .mobile-star-list { margin-bottom: 20px; }
   .mobile-star-row {
     display: flex; align-items: center;
@@ -913,7 +916,7 @@ function showAnalysis() {
       const pct = stat ? stat.pct : 0;
       const barWidth = Math.max((cnt / maxCount) * 80, cnt > 0 ? 2 : 0);
       html += `<div class="mobile-star-row">
-        <span class="stars-gold">${"★".repeat(Math.min(s, 10))}</span>
+        <span class="stars-gold">${s}★</span>
         <span class="threshold-bar" style="width:${barWidth}px;height:6px;border-radius:3px;background:#1677ff;display:inline-block;vertical-align:middle;margin:0 6px;"></span>
         <span style="font-size:13px;">${cnt}家 (${pct.toFixed(1)}%)</span>
       </div>`;
