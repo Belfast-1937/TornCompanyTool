@@ -170,6 +170,20 @@ tbody a:hover { text-decoration: underline; }
 }
 .modal-close:hover { background: #f0f0f0; color: #333; }
 .modal-body { padding: 12px 20px; overflow-y: auto; flex: 1; }
+
+/* 确认对话框 */
+.confirm-dialog { max-width: 480px; width: 90%; }
+.confirm-footer {
+  display: flex; justify-content: flex-end; gap: 8px;
+  padding: 12px 20px; border-top: 1px solid #f0f0f0; flex-shrink: 0;
+}
+.btn-default {
+  background: rgba(0,0,0,0.06); color: #333; border: 1px solid #d9d9d9;
+  padding: 10px 24px; font-size: 15px; border-radius: 6px;
+  cursor: pointer; font-weight: 500; white-space: nowrap;
+  transition: opacity 0.2s; min-width: 90px;
+}
+.btn-default:hover { opacity: 0.85; }
 .modal-body h3 { font-size: 15px; margin-bottom: 8px !important; }
 .modal-body table { min-width: 750px; }
 .modal-body td, .modal-body th { font-size: 12px; padding: 6px 8px; }
@@ -205,6 +219,15 @@ tbody a:hover { text-decoration: underline; }
   .modal { width: 95%; max-height: 90vh; }
   .modal-body { padding: 12px 16px; }
   .modal-close { min-height: 44px; min-width: 44px; }
+  .mobile-star-list { margin-bottom: 20px; }
+  .mobile-star-row {
+    display: flex; align-items: center;
+    padding: 5px 0; border-bottom: 1px solid #f0f0f0;
+    font-size: 13px;
+  }
+  .confirm-dialog { width: 95%; }
+  .confirm-footer { flex-direction: column; }
+  .confirm-footer .btn { width: 100%; min-height: 44px; }
 }
 
 /* 暗色模式 */
@@ -314,6 +337,23 @@ body::before { background: radial-gradient(circle 160px at var(--mx, 50%) var(--
     </div>
   </div>
 
+  <!-- 确认对话框 -->
+  <div class="modal-overlay" id="confirm-modal" role="alertdialog" aria-modal="true">
+    <div class="modal confirm-dialog">
+      <div class="modal-header">
+        <h2>确认操作</h2>
+        <button class="modal-close" onclick="closeConfirmModal()" aria-label="关闭">✕</button>
+      </div>
+      <div class="modal-body">
+        <p id="confirm-message" style="white-space:pre-line;"></p>
+      </div>
+      <div class="confirm-footer">
+        <button class="btn btn-default" id="confirm-cancel-btn">取消</button>
+        <button class="btn btn-warning" id="confirm-ok-btn">确认保存</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 分析弹窗 -->
   <div class="modal-overlay" id="analysis-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="modal">
@@ -360,22 +400,28 @@ function initIndustrySelect() {
 function saveApiKey() {
   const apiKey = document.getElementById("apikey-input").value.trim();
   if (!apiKey) return;
-  const confirmed = confirm("⚠️ 警告：API Key 将明文存储在浏览器本地存储(localStorage)中。\n\n任何能访问此浏览器的人都可以获取此 Key。是否继续？");
-  if (confirmed) {
-    localStorage.setItem("torn_industry_api_key", apiKey);
-  }
+  showConfirm(
+    "⚠️ 警告：API Key 将明文存储在浏览器本地存储(localStorage)中。\n\n任何能访问此浏览器的人都可以获取此 Key。是否继续？",
+    function() {
+      try { localStorage.setItem("torn_industry_api_key", apiKey); }
+      catch (e) { showError("存储失败：" + e.message); }
+    }
+  );
 }
 
 function clearApiKey() {
-  localStorage.removeItem("torn_industry_api_key");
+  try { localStorage.removeItem("torn_industry_api_key"); }
+  catch (e) {}
   document.getElementById("apikey-input").value = "";
 }
 
 function loadSavedApiKey() {
-  const saved = localStorage.getItem("torn_industry_api_key");
-  if (saved) {
-    document.getElementById("apikey-input").value = saved;
-  }
+  try {
+    const saved = localStorage.getItem("torn_industry_api_key");
+    if (saved) {
+      document.getElementById("apikey-input").value = saved;
+    }
+  } catch (e) {}
 }
 
 // ==================== 字段转写（与 data_processor.py get_industry_companies 一致） ====================
@@ -793,7 +839,7 @@ function showAnalysis() {
   // 用 Map 加速查找
   const starStatsMap = new Map(starStats.map(s => [s.star, s]));
 
-  // ---------- 计算晋升门槛（考虑一次只能升/降一星 + 占位者顺延） ----------
+  // ---------- 计算晋升门槛（占位者顺延） ----------
   let cumulativeCount = 0;
   const promotionThresholds = [];
 
@@ -840,7 +886,7 @@ function showAnalysis() {
       thresholdCo = allSorted[thresholdRank - 1];
     }
     const validWeekly = (thresholdCo && thresholdCo.Weekly_Income > 0) ? thresholdCo.Weekly_Income : 0;
-    const validDaily = (thresholdCo && thresholdCo.Weekly_Income > 0) ? thresholdCo.Daily_Income : 0;
+    const validDaily = validWeekly > 0 ? Math.ceil(validWeekly / 7) : 0;
 
     promotionThresholds.push({
       fromStar: s, toStar: s + 1,
@@ -854,71 +900,111 @@ function showAnalysis() {
   }
 
   // ========== 第一部分：各星级实际分布 ==========
+  const isMobile = window.innerWidth < 768;
   let html = `<h3 style="margin-bottom:12px;color:#1677ff;">📋 各星级实际分布</h3>`;
-  html += `<table style="margin-bottom:20px;">
-    <thead>
-      <tr>
-        <th>星级</th><th>公司数</th><th>占比</th><th>分布</th>
-        <th>周收入范围</th><th>日收入范围</th>
-      </tr>
-    </thead><tbody>`;
-
   const maxCount = Math.max(...starStats.map(s => s.count), 1);
-  for (let s = 10; s >= 0; s--) {
-    const stat = starStatsMap.get(s);
-    const cnt = stat ? stat.count : 0;
-    const pct = stat ? stat.pct : 0;
-    const barWidth = Math.max((cnt / maxCount) * 120, cnt > 0 ? 2 : 0);
 
-    html += `<tr>
-      <td class="center"><span class="stars-gold">${"★".repeat(Math.min(s, 10))}</span> ${s}★</td>
-      <td class="center">${cnt}</td>
-      <td class="center">${pct.toFixed(1)}%</td>
-      <td style="width:130px;"><span class="threshold-bar" style="width:${barWidth}px;"></span></td>
-      <td class="num">${cnt > 0 ? `$${stat.minWeekly.toLocaleString()} ~ $${stat.maxWeekly.toLocaleString()}` : "-"}</td>
-      <td class="num">${cnt > 0 ? `$${stat.minDaily.toLocaleString()} ~ $${stat.maxDaily.toLocaleString()}` : "-"}</td>
-    </tr>`;
+  if (isMobile) {
+    // 移动端简略版：卡片列表
+    html += `<div class="mobile-star-list">`;
+    for (let s = 10; s >= 0; s--) {
+      const stat = starStatsMap.get(s);
+      const cnt = stat ? stat.count : 0;
+      const pct = stat ? stat.pct : 0;
+      const barWidth = Math.max((cnt / maxCount) * 80, cnt > 0 ? 2 : 0);
+      html += `<div class="mobile-star-row">
+        <span class="stars-gold">${"★".repeat(Math.min(s, 10))}</span>
+        <span class="threshold-bar" style="width:${barWidth}px;height:6px;border-radius:3px;background:#1677ff;display:inline-block;vertical-align:middle;margin:0 6px;"></span>
+        <span style="font-size:13px;">${cnt}家 (${pct.toFixed(1)}%)</span>
+      </div>`;
+    }
+    html += `</div>`;
+  } else {
+    html += `<table style="margin-bottom:20px;">
+      <thead>
+        <tr>
+          <th>星级</th><th>公司数</th><th>占比</th><th>分布</th>
+          <th>周收入范围</th><th>日收入范围</th>
+        </tr>
+      </thead><tbody>`;
+    for (let s = 10; s >= 0; s--) {
+      const stat = starStatsMap.get(s);
+      const cnt = stat ? stat.count : 0;
+      const pct = stat ? stat.pct : 0;
+      const barWidth = Math.max((cnt / maxCount) * 120, cnt > 0 ? 2 : 0);
+      html += `<tr>
+        <td class="center"><span class="stars-gold">${"★".repeat(Math.min(s, 10))}</span> ${s}★</td>
+        <td class="center">${cnt}</td>
+        <td class="center">${pct.toFixed(1)}%</td>
+        <td style="width:130px;"><span class="threshold-bar" style="width:${barWidth}px;"></span></td>
+        <td class="num">${cnt > 0 ? `$${stat.minWeekly.toLocaleString()} ~ $${stat.maxWeekly.toLocaleString()}` : "-"}</td>
+        <td class="num">${cnt > 0 ? `$${stat.minDaily.toLocaleString()} ~ $${stat.maxDaily.toLocaleString()}` : "-"}</td>
+      </tr>`;
+    }
+    html += `</tbody></table>`;
   }
-  html += `</tbody></table>`;
 
   // ========== 第二部分：晋升门槛分析 ==========
-  html += `<h3 style="margin-bottom:12px;color:#52c41a;">🚀 晋升门槛预估（一次只能升/降一星）</h3>`;
-  html += `<table style="margin-bottom:20px;">
-    <thead>
-      <tr>
-        <th>晋升方向</th><th>目标配额</th><th>区间内分布</th>
-        <th style="color:#ff4d4f;">占位者</th><th>顺延至排名</th>
-        <th>门槛周收入</th><th>门槛日收入</th>
-      </tr>
-    </thead><tbody>`;
-
-  for (const pt of promotionThresholds) {
-    if (pt.thresholdWeekly === 0 && pt.quotaFrom > totalCount) continue;
-    const s = pt.fromStar;
-    const target = pt.toStar;
-    const targetStars = "★".repeat(Math.min(target, 10));
-
-    html += `<tr>
-      <td class="center" style="font-weight:600;">
-        <span class="stars-gold">${"★".repeat(Math.min(s, 10))}</span> ${s}★
-        <span style="margin:0 4px;">→</span>
-        <span class="stars-gold">${targetStars}</span> ${target}★
-      </td>
-      <td class="center">#${pt.quotaFrom}–#${pt.quotaTo} (${pt.quotaTo - pt.quotaFrom + 1}家)</td>
-      <td style="font-size:12px;max-width:250px;word-break:break-all;">${pt.intervalDist}</td>
-      <td class="center" style="color:${pt.blockerCount > 0 ? '#ff4d4f' : '#888'};font-weight:${pt.blockerCount > 0 ? 600 : 400};">
-        ${pt.blockerCount > 0 ? pt.blockerCount + ' 家' : '0'}
-      </td>
-      <td class="center" style="font-weight:600;">${typeof pt.thresholdRank === 'number' ? '#' + pt.thresholdRank : pt.thresholdRank}</td>
-      <td class="num" style="font-weight:600;color:#1677ff;">
-        ${pt.thresholdWeekly > 0 ? `≥ $${pt.thresholdWeekly.toLocaleString()}` : "—"}
-      </td>
-      <td class="num" style="color:#1677ff;">
-        ${pt.thresholdDaily > 0 ? `≥ $${pt.thresholdDaily.toLocaleString()}` : "—"}
-      </td>
-    </tr>`;
+  html += `<h3 style="margin-bottom:12px;color:#52c41a;">🚀 晋升门槛预估</h3>`;
+  if (isMobile) {
+    // 移动端简略版：方向 | 数量 | ≥周收入
+    html += `<table style="margin-bottom:20px;">
+      <thead>
+        <tr><th>晋升方向</th><th>数量</th><th>≥周收入</th></tr>
+      </thead><tbody>`;
+    for (const pt of promotionThresholds) {
+      if (pt.thresholdWeekly === 0 && pt.quotaFrom > totalCount) continue;
+      const s = pt.fromStar;
+      const target = pt.toStar;
+      const targetStars = "★".repeat(Math.min(target, 10));
+      const count = pt.quotaTo - pt.quotaFrom + 1;
+      html += `<tr>
+        <td class="center" style="font-weight:600;">
+          <span class="stars-gold" style="font-size:12px;">${"★".repeat(Math.min(s, 10))}</span>
+          <span style="margin:0 2px;">→</span>
+          <span class="stars-gold" style="font-size:12px;">${targetStars}</span>
+        </td>
+        <td class="center">${count}家</td>
+        <td class="num" style="font-weight:600;color:#1677ff;">${pt.thresholdWeekly > 0 ? `$${pt.thresholdWeekly.toLocaleString()}` : "—"}</td>
+      </tr>`;
+    }
+    html += `</tbody></table>`;
+  } else {
+    html += `<table style="margin-bottom:20px;">
+      <thead>
+        <tr>
+          <th>晋升方向</th><th>目标配额</th><th>区间内分布</th>
+          <th style="color:#ff4d4f;">占位者</th><th>顺延至排名</th>
+          <th>门槛周收入</th><th>门槛日收入</th>
+        </tr>
+      </thead><tbody>`;
+    for (const pt of promotionThresholds) {
+      if (pt.thresholdWeekly === 0 && pt.quotaFrom > totalCount) continue;
+      const s = pt.fromStar;
+      const target = pt.toStar;
+      const targetStars = "★".repeat(Math.min(target, 10));
+      html += `<tr>
+        <td class="center" style="font-weight:600;">
+          <span class="stars-gold">${"★".repeat(Math.min(s, 10))}</span> ${s}★
+          <span style="margin:0 4px;">→</span>
+          <span class="stars-gold">${targetStars}</span> ${target}★
+        </td>
+        <td class="center">#${pt.quotaFrom}–#${pt.quotaTo} (${pt.quotaTo - pt.quotaFrom + 1}家)</td>
+        <td style="font-size:12px;max-width:250px;word-break:break-all;">${pt.intervalDist}</td>
+        <td class="center" style="color:${pt.blockerCount > 0 ? '#ff4d4f' : '#888'};font-weight:${pt.blockerCount > 0 ? 600 : 400};">
+          ${pt.blockerCount > 0 ? pt.blockerCount + ' 家' : '0'}
+        </td>
+        <td class="center" style="font-weight:600;">${typeof pt.thresholdRank === 'number' ? '#' + pt.thresholdRank : pt.thresholdRank}</td>
+        <td class="num" style="font-weight:600;color:#1677ff;">
+          ${pt.thresholdWeekly > 0 ? `≥ $${pt.thresholdWeekly.toLocaleString()}` : "—"}
+        </td>
+        <td class="num" style="color:#1677ff;">
+          ${pt.thresholdDaily > 0 ? `≥ $${pt.thresholdDaily.toLocaleString()}` : "—"}
+        </td>
+      </tr>`;
+    }
+    html += `</tbody></table>`;
   }
-  html += `</tbody></table>`;
 
   // ========== 说明 ==========
   const note = `
@@ -947,8 +1033,31 @@ document.addEventListener("click", function(e) {
 });
 // ESC 关闭
 document.addEventListener("keydown", function(e) {
-  if (e.key === "Escape") closeAnalysis();
+  if (e.key === "Escape") {
+    closeAnalysis();
+    closeConfirmModal();
+  }
 });
+
+// ==================== 确认对话框（替代 confirm()，移动端兼容） ====================
+var _confirmCallback = null;
+function showConfirm(message, onConfirm) {
+  document.getElementById("confirm-message").textContent = message;
+  _confirmCallback = onConfirm;
+  document.getElementById("confirm-modal").classList.add("active");
+}
+function closeConfirmModal() {
+  document.getElementById("confirm-modal").classList.remove("active");
+  _confirmCallback = null;
+}
+document.addEventListener("click", function(e) {
+  if (e.target.id === "confirm-modal") closeConfirmModal();
+});
+document.getElementById("confirm-ok-btn").addEventListener("click", function() {
+  if (_confirmCallback) { _confirmCallback(); _confirmCallback = null; }
+  closeConfirmModal();
+});
+document.getElementById("confirm-cancel-btn").addEventListener("click", closeConfirmModal);
 
 // 鼠标探照灯效果
 document.addEventListener("mousemove", (e) => {
