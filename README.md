@@ -358,6 +358,7 @@ TornCompanyTool/
 | TrainingManager | v1.0 | 2026-05-30 | 初始发布，Tkinter GUI 训练规划 |
 | TrainingManager | v1.1 | 2026-05-31 | 删除 User ID 输入；修复同效率岗位排序；修正效率计算逻辑 |
 | TrainingManager | v1.2 | 2026-05-31 | 更换 GUI 框架为 PySide6；增加背景图片美化；增加训练次数估算 |
+| TrainingManager | v1.3 | 2026-06-05 | 新增多步训练规划（DP全局最优/凸优化自适应）；选中员工反馈提示；UI交互优化 |
 | IsBossDead | v0.1 | 2026-05-22 | 初始版本，核心扫描功能 |
 | IsBossDead | v0.2 | 2026-05-22 | 增加最小星级过滤、Director Faction 信息、加快请求频率 |
 | IsBossDead | v1.0 | 2026-05-31 | 新增老板状态数据库缓存机制，大幅减少重复扫描时的 API 请求量 |

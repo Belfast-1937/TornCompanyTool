@@ -6,15 +6,16 @@ import threading
 
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
-    QLabel, QComboBox, QLineEdit, QPushButton,
-    QTableWidget, QTableWidgetItem, QHeaderView, QMessageBox
+    QLabel, QComboBox, QLineEdit, QPushButton, QSpinBox,
+    QTableWidget, QTableWidgetItem, QHeaderView, QMessageBox,
+    QDialog, QDialogButtonBox
 )
 from PySide6.QtCore import Qt, Signal, QObject
 from PySide6.QtGui import QPixmap, QPainter, QPalette, QBrush, QIcon
 
 from constants import COMPANIES_DATA, SCRIPT_DIR
 from api_client import fetch_company_data, parse_employees, parse_company_type
-from trainer import find_best_training_job, calc_trains_to_next_point
+from trainer import find_best_training_job, calc_trains_to_next_point, simulate_training_plan
 from config import load_config, save_config, clear_config
 from report import generate_report
 
@@ -25,6 +26,107 @@ _BG_PATH = "./background.png"
 class _Signals(QObject):
     fetch_done = Signal(list, object)
     fetch_error = Signal(str)
+
+
+class TrainingPlanDialog(QDialog):
+    """详细训练规划弹窗 - 对选中员工进行N步训练规划"""
+
+    def __init__(self, emp, target_job_name, all_jobs, company_job_names, parent=None):
+        super().__init__(parent)
+        self.emp = emp
+        self.all_jobs = all_jobs
+        self.job_map = {j['name']: j for j in all_jobs}
+
+        self.setWindowTitle(f"详细训练规划 - {emp.get('name', '')} (ID: {emp.get('EmployeeID', '')})")
+        self.setMinimumSize(700, 500)
+
+        layout = QVBoxLayout(self)
+
+        # ---- 员工信息 ----
+        info_layout = QGridLayout()
+        info_layout.addWidget(QLabel("员工:"), 0, 0)
+        info_layout.addWidget(QLabel(f"{emp.get('name', '')} (ID: {emp.get('EmployeeID', '')})"), 0, 1)
+        info_layout.addWidget(QLabel("当前岗位:"), 0, 2)
+        info_layout.addWidget(QLabel(emp.get('position', '')), 0, 3)
+
+        info_layout.addWidget(QLabel("MAN:"), 1, 0)
+        info_layout.addWidget(QLabel(str(emp.get('manual_labor', 0))), 1, 1)
+        info_layout.addWidget(QLabel("INT:"), 1, 2)
+        info_layout.addWidget(QLabel(str(emp.get('intelligence', 0))), 1, 3)
+
+        info_layout.addWidget(QLabel("END:"), 1, 4)
+        info_layout.addWidget(QLabel(str(emp.get('endurance', 0))), 1, 5)
+        layout.addLayout(info_layout)
+
+        # ---- 目标岗位和次数 ----
+        input_layout = QHBoxLayout()
+        input_layout.addWidget(QLabel("目标岗位:"))
+        self.target_combo = QComboBox()
+        self.target_combo.addItems(company_job_names)
+        if target_job_name in company_job_names:
+            self.target_combo.setCurrentText(target_job_name)
+        input_layout.addWidget(self.target_combo)
+
+        input_layout.addSpacing(20)
+        input_layout.addWidget(QLabel("训练次数:"))
+        self.train_spin = QSpinBox()
+        self.train_spin.setRange(1, 9999)
+        self.train_spin.setValue(5)
+        input_layout.addWidget(self.train_spin)
+
+        self.plan_btn = QPushButton("开始规划")
+        self.plan_btn.clicked.connect(self._run_plan)
+        input_layout.addWidget(self.plan_btn)
+
+        input_layout.addStretch()
+        layout.addLayout(input_layout)
+
+        # ---- 结果表格 ----
+        self.result_table = QTableWidget()
+        self.result_table.setColumnCount(8)
+        self.result_table.setHorizontalHeaderLabels(
+            ["次数", "训练岗位", "效率前", "效率后", "提升", "MAN", "INT", "END"])
+        self.result_table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.result_table.verticalHeader().setVisible(False)
+        self.result_table.horizontalHeader().setStretchLastSection(True)
+        layout.addWidget(self.result_table, 1)
+
+        # ---- 关闭按钮 ----
+        close_btn = QPushButton("关闭")
+        close_btn.clicked.connect(self.close)
+        layout.addWidget(close_btn)
+
+    def _run_plan(self):
+        target_name = self.target_combo.currentText()
+        target_job = self.job_map.get(target_name)
+        if target_job is None:
+            QMessageBox.warning(self, "错误", "请选择有效的目标岗位")
+            return
+
+        total = self.train_spin.value()
+        self.plan_btn.setEnabled(False)
+        self.plan_btn.setText("规划中...")
+
+        try:
+            history = simulate_training_plan(self.emp, target_job, self.all_jobs, total)
+
+            self.result_table.setRowCount(len(history))
+            for i, step in enumerate(history):
+                st = step['stats']
+                self.result_table.setItem(i, 0, QTableWidgetItem(str(i + 1)))
+                self.result_table.setItem(i, 1, QTableWidgetItem(step['best_job']))
+                self.result_table.setItem(i, 2, QTableWidgetItem(str(step['eff_before'])))
+                self.result_table.setItem(i, 3, QTableWidgetItem(str(step['eff_after'])))
+                self.result_table.setItem(i, 4, QTableWidgetItem(
+                    f"+{step['gain']}" if step['gain'] >= 0 else str(step['gain'])))
+                self.result_table.setItem(i, 5, QTableWidgetItem(str(st['MAN'])))
+                self.result_table.setItem(i, 6, QTableWidgetItem(str(st['INT'])))
+                self.result_table.setItem(i, 7, QTableWidgetItem(str(st['END'])))
+        except Exception as e:
+            QMessageBox.critical(self, "规划失败", f"发生错误：{str(e)}")
+        finally:
+            self.plan_btn.setEnabled(True)
+            self.plan_btn.setText("开始规划")
 
 
 class TrainingPlannerApp(QMainWindow):
@@ -160,6 +262,13 @@ class TrainingPlannerApp(QMainWindow):
         op_layout.addStretch()
         root_layout.addLayout(op_layout)
 
+        # 多步训练规划提示（表格上方常显示）
+        self.detail_hint_label = QLabel(
+            "💡 在表格中选中一名员工，点击底部「多步训练规划」可查看多次训练方案")
+        self.detail_hint_label.setStyleSheet(
+            "color: #555; background-color: transparent; border: none; font-size: 11px; padding: 0 0 4px 0;")
+        root_layout.addWidget(self.detail_hint_label)
+
         # ===== 表格 =====
         self.table = QTableWidget()
         self.table.setColumnCount(self.COL_COUNT_BASE)
@@ -169,14 +278,38 @@ class TrainingPlannerApp(QMainWindow):
         self.table.setSelectionBehavior(QTableWidget.SelectRows)
         self.table.verticalHeader().setVisible(False)
         self.table.horizontalHeader().setStretchLastSection(True)
-        # 设置默认行高避免文字重影
         self.table.verticalHeader().setDefaultSectionSize(26)
+        self.table.itemSelectionChanged.connect(self._on_table_selection_changed)
+        # 选中行高亮样式
+        self.table.setStyleSheet("""
+            QTableWidget {
+                background-color: rgba(255, 255, 255, 160);
+                border: 1px solid #ccc;
+                gridline-color: #aaa;
+            }
+            QTableWidget::item:selected {
+                background-color: #3399ff;
+                color: white;
+            }
+            QHeaderView::section {
+                background-color: rgba(255, 255, 255, 160);
+            }
+        """)
         root_layout.addWidget(self.table, 1)
 
         # ===== 底部 =====
+        bottom_layout = QHBoxLayout()
         self.plan_btn = QPushButton("规划训练")
         self.plan_btn.clicked.connect(self._plan_training)
-        root_layout.addWidget(self.plan_btn)
+        bottom_layout.addWidget(self.plan_btn)
+
+        self.detail_plan_btn = QPushButton("多步训练规划")
+        self.detail_plan_btn.clicked.connect(self._show_detail_plan)
+        self.detail_plan_btn.setEnabled(False)
+        bottom_layout.addWidget(self.detail_plan_btn)
+
+        bottom_layout.addStretch()
+        root_layout.addLayout(bottom_layout)
 
     # ---- 配置 ----
 
@@ -301,6 +434,7 @@ class TrainingPlannerApp(QMainWindow):
 
         self.fetch_btn.setEnabled(True)
         self.plan_btn.setEnabled(True)
+        self.detail_plan_btn.setEnabled(True)
         if company_type is not None and company_type in COMPANIES_DATA:
             self.status_label.setText(f"成功获取 {len(employees)} 名员工数据")
             self.status_label.setStyleSheet(
@@ -371,6 +505,74 @@ class TrainingPlannerApp(QMainWindow):
                 if item:
                     result[emp_id] = item.text()
         return result
+
+    # ---- 表格选择反馈 ----
+
+    def _on_table_selection_changed(self):
+        """选中行时在状态栏显示选中员工姓名"""
+        selected_rows = set()
+        for item in self.table.selectedItems():
+            selected_rows.add(item.row())
+        if selected_rows and self.detail_plan_btn.isEnabled():
+            row = min(selected_rows)
+            name_item = self.table.item(row, 1)
+            if name_item:
+                self.status_label.setText(f"已选中: {name_item.text()} — 可点击底部「多步训练规划」")
+                self.status_label.setStyleSheet(
+                    "color: #3399ff; background-color: transparent; border: none;")
+            return
+        # 没有选中时恢复默认状态
+        if self.employees_data:
+            self.status_label.setText(f"成功获取 {len(self.employees_data)} 名员工数据")
+            self.status_label.setStyleSheet(
+                "color: green; background-color: transparent; border: none;")
+        else:
+            self.status_label.setText("就绪")
+            self.status_label.setStyleSheet(
+                "color: gray; background-color: transparent; border: none;")
+
+    # ---- 详细训练规划 ----
+
+    def _show_detail_plan(self):
+        """打开详细训练规划弹窗"""
+        if not self.employees_data:
+            QMessageBox.warning(self, "提示", "请先拉取员工数据")
+            return
+
+        company_id = self._get_selected_company_id()
+        if company_id is None or company_id not in COMPANIES_DATA:
+            QMessageBox.warning(self, "提示", "请选择有效的公司")
+            return
+
+        # 获取选中行
+        selected_rows = set()
+        for item in self.table.selectedItems():
+            selected_rows.add(item.row())
+        if not selected_rows:
+            QMessageBox.warning(self, "提示", "请在表格中选择一名员工")
+            return
+        row = min(selected_rows)
+
+        id_item = self.table.item(row, 0)
+        if id_item is None:
+            return
+        emp_id = int(id_item.text())
+        emp = next((e for e in self.employees_data if e['EmployeeID'] == emp_id), None)
+        if emp is None:
+            QMessageBox.warning(self, "提示", "未找到该员工数据")
+            return
+
+        # 获取目标岗位（从期待岗位 ComboBox 读取）
+        widget = self.table.cellWidget(row, 4)
+        target_job_name = ''
+        if isinstance(widget, QComboBox):
+            target_job_name = widget.currentText()
+
+        company_data = COMPANIES_DATA[company_id]
+        all_jobs = company_data['jobs']
+
+        dialog = TrainingPlanDialog(emp, target_job_name, all_jobs, self.company_job_names, self)
+        dialog.exec()
 
     # ---- 规划训练 ----
 
