@@ -156,6 +156,7 @@ tbody a:hover { text-decoration: underline; }
   flex-shrink: 0;
 }
 .modal-header h2 { font-size: 17px; color: #1a1a2e; }
+#analysis-modal .modal { background: #fff; }
 .modal-close {
   background: none; border: none; font-size: 20px; cursor: pointer;
   color: #999; padding: 4px 8px; border-radius: 4px; min-height: 32px;
@@ -223,46 +224,6 @@ tbody a:hover { text-decoration: underline; }
   .confirm-dialog { width: 95%; }
   .confirm-footer { flex-direction: column; }
   .confirm-footer .btn { width: 100%; min-height: 44px; }
-}
-
-/* 暗色模式 */
-@media (prefers-color-scheme: dark) {
-  body { background-color: #1a1a2e; color: #e0e0e0; }
-body::before { background: radial-gradient(circle 160px at var(--mx, 50%) var(--my, 50%), transparent 0%, rgba(0,0,0,0.62) 70%); }
-  .app-header,
-  .table-container,
-  .modal {
-    background: rgba(22,33,62,0.80);
-    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
-  }
-  .app-header h1,
-  .modal-header h2 { color: #e0e0e0; }
-  thead th {
-    background: rgba(26,26,62,0.78); border-bottom-color: #2a2a4e; color: #ccc;
-  }
-  thead th:hover { background: #24244e; }
-  tbody td { border-bottom-color: #2a2a4e; color: #ddd; }
-  tbody tr:hover { background: #1e2a4a; }
-  .pagination button {
-    background: rgba(26,26,62,0.73); border-color: #3a3a5e; color: #ccc;
-  }
-  .pagination button:hover { border-color: #1677ff; color: #1677ff; }
-  .pagination button.active { background: #1677ff; color: #fff; }
-  .pagination select { background: rgba(26,26,62,0.73); color: #ccc; border-color: #3a3a5e; }
-  .search-form .form-item input,
-  .search-form .form-item select {
-    background: rgba(26,26,62,0.73); color: #ddd; border-color: #3a3a5e;
-  }
-  .search-form .form-item input:focus,
-  .search-form .form-item select:focus { border-color: #1677ff; }
-  .search-form .form-item label { color: #aaa; }
-  .search-result-info { background: rgba(22,119,255,0.15); border-color: rgba(22,119,255,0.3); }
-  .note { background: rgba(250,173,20,0.1); border-color: rgba(250,173,20,0.3); color: #bbb; }
-  .modal-header { border-bottom-color: #2a2a4e; }
-  .modal-close:hover { background: #2a2a4e; color: #ddd; }
-  .highlight { background: rgba(250,173,20,0.3); }
-  .btn-group > div label { color: #aaa; }
-  #search-bar input { background: rgba(26,26,62,0.73); color: #ddd; border-color: #3a3a5e; }
 }
 
 /* 打印样式 */

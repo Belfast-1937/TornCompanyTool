@@ -122,7 +122,7 @@ const state = {
   currentData: [],
   filteredData: [],
   searchTerm: "",
-  sortColumn: "Stars",
+  sortColumn: "Weekly_Income",
   sortDirection: "desc",
   currentPage: 1,
   pageSize: 20,
@@ -160,7 +160,7 @@ async function doQuery() {
     state.filteredData = rows;
     state.searchTerm = "";
     document.getElementById("search-input").value = "";
-    state.sortColumn = "Stars";
+    state.sortColumn = "Weekly_Income";
     state.sortDirection = "desc";
     state.currentPage = 1;
 
@@ -533,16 +533,24 @@ function showAnalysis() {
   // ========== 第一部分：各星级实际分布 ==========
   const isMobile = window.innerWidth < 768;
   let html = `<h3 style="margin-bottom:12px;color:#1677ff;">📋 各星级实际分布</h3>`;
-  const maxCount = Math.max(...starStats.map(s => s.count), 1);
+  // 用于显示的计数：0星中排除周收入为0的公司
+  const displayCounts = starStats.map(stat => {
+    if (stat.star === 0 && stat.count > 0) {
+      const zeroWithIncome = starGroups[0].filter(c => c.Weekly_Income > 0).length;
+      return zeroWithIncome;
+    }
+    return stat.count;
+  });
+  const maxDisplayCount = Math.max(...displayCounts, 1);
 
   if (isMobile) {
     // 移动端简略版：卡片列表
     html += `<div class="mobile-star-list">`;
     for (let s = 10; s >= 0; s--) {
       const stat = starStatsMap.get(s);
-      const cnt = stat ? stat.count : 0;
+      const cnt = displayCounts[10 - s];
       const pct = stat ? stat.pct : 0;
-      const barWidth = Math.max((cnt / maxCount) * 80, cnt > 0 ? 2 : 0);
+      const barWidth = Math.max((cnt / maxDisplayCount) * 80, cnt > 0 ? 2 : 0);
       html += `<div class="mobile-star-row">
         <span class="stars-gold">${s}★</span>
         <span class="threshold-bar" style="width:${barWidth}px;height:6px;border-radius:3px;background:#1677ff;display:inline-block;vertical-align:middle;margin:0 6px;"></span>
@@ -560,16 +568,32 @@ function showAnalysis() {
       </thead><tbody>`;
     for (let s = 10; s >= 0; s--) {
       const stat = starStatsMap.get(s);
-      const cnt = stat ? stat.count : 0;
+      const cnt = displayCounts[10 - s];
       const pct = stat ? stat.pct : 0;
-      const barWidth = Math.max((cnt / maxCount) * 120, cnt > 0 ? 2 : 0);
+      const barWidth = Math.max((cnt / maxDisplayCount) * 120, cnt > 0 ? 2 : 0);
+      // 0星周收入范围用有收入的公司计算
+      let minWeekly = stat ? stat.minWeekly : 0;
+      let maxWeekly = stat ? stat.maxWeekly : 0;
+      let minDaily = stat ? stat.minDaily : 0;
+      let maxDaily = stat ? stat.maxDaily : 0;
+      if (s === 0 && starGroups[0] && starGroups[0].length > 0) {
+        const withIncome = starGroups[0].filter(c => c.Weekly_Income > 0);
+        if (withIncome.length > 0) {
+          const w = withIncome.map(c => c.Weekly_Income);
+          const d = withIncome.map(c => c.Daily_Income);
+          minWeekly = Math.min(...w); maxWeekly = Math.max(...w);
+          minDaily = Math.min(...d); maxDaily = Math.max(...d);
+        } else {
+          minWeekly = 0; maxWeekly = 0; minDaily = 0; maxDaily = 0;
+        }
+      }
       html += `<tr>
-        <td class="center"><span class="stars-gold">${"★".repeat(Math.min(s, 10))}</span> ${s}★</td>
+        <td class="center"><span class="stars-gold">${"★".repeat(Math.min(s, 10))}${"☆".repeat(10 - Math.min(s, 10))}</span> ${s}★</td>
         <td class="center">${cnt}</td>
         <td class="center">${pct.toFixed(1)}%</td>
         <td style="width:130px;"><span class="threshold-bar" style="width:${barWidth}px;"></span></td>
-        <td class="num">${cnt > 0 ? `$${stat.minWeekly.toLocaleString()} ~ $${stat.maxWeekly.toLocaleString()}` : "-"}</td>
-        <td class="num">${cnt > 0 ? `$${stat.minDaily.toLocaleString()} ~ $${stat.maxDaily.toLocaleString()}` : "-"}</td>
+        <td class="num">${cnt > 0 ? `$${minWeekly.toLocaleString()} ~ $${maxWeekly.toLocaleString()}` : "-"}</td>
+        <td class="num">${cnt > 0 ? `$${minDaily.toLocaleString()} ~ $${maxDaily.toLocaleString()}` : "-"}</td>
       </tr>`;
     }
     html += `</tbody></table>`;
@@ -612,10 +636,10 @@ function showAnalysis() {
       if (pt.thresholdWeekly === 0 && pt.quotaFrom > totalCount) continue;
       const s = pt.fromStar;
       const target = pt.toStar;
-      const targetStars = "★".repeat(Math.min(target, 10));
+      const targetStars = "★".repeat(Math.min(target, 10)) + "☆".repeat(10 - Math.min(target, 10));
       html += `<tr>
         <td class="center" style="font-weight:600;">
-          <span class="stars-gold">${"★".repeat(Math.min(s, 10))}</span> ${s}★
+          <span class="stars-gold">${"★".repeat(Math.min(s, 10))}${"☆".repeat(10 - Math.min(s, 10))}</span> ${s}★
           <span style="margin:0 4px;">→</span>
           <span class="stars-gold">${targetStars}</span> ${target}★
         </td>

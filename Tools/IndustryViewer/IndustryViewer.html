@@ -164,6 +164,7 @@ tbody a:hover { text-decoration: underline; }
   flex-shrink: 0;
 }
 .modal-header h2 { font-size: 17px; color: #1a1a2e; }
+#analysis-modal .modal { background: #fff; }
 .modal-close {
   background: none; border: none; font-size: 20px; cursor: pointer;
   color: #999; padding: 4px 8px; border-radius: 4px; min-height: 32px;
@@ -231,46 +232,6 @@ tbody a:hover { text-decoration: underline; }
   .confirm-dialog { width: 95%; }
   .confirm-footer { flex-direction: column; }
   .confirm-footer .btn { width: 100%; min-height: 44px; }
-}
-
-/* 暗色模式 */
-@media (prefers-color-scheme: dark) {
-  body { background-color: #1a1a2e; color: #e0e0e0; }
-body::before { background: radial-gradient(circle 160px at var(--mx, 50%) var(--my, 50%), transparent 0%, rgba(0,0,0,0.62) 70%); }
-  .app-header,
-  .table-container,
-  .modal {
-    background: rgba(22,33,62,0.80);
-    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
-  }
-  .app-header h1,
-  .modal-header h2 { color: #e0e0e0; }
-  thead th {
-    background: rgba(26,26,62,0.78); border-bottom-color: #2a2a4e; color: #ccc;
-  }
-  thead th:hover { background: #24244e; }
-  tbody td { border-bottom-color: #2a2a4e; color: #ddd; }
-  tbody tr:hover { background: #1e2a4a; }
-  .pagination button {
-    background: rgba(26,26,62,0.73); border-color: #3a3a5e; color: #ccc;
-  }
-  .pagination button:hover { border-color: #1677ff; color: #1677ff; }
-  .pagination button.active { background: #1677ff; color: #fff; }
-  .pagination select { background: rgba(26,26,62,0.73); color: #ccc; border-color: #3a3a5e; }
-  .search-form .form-item input,
-  .search-form .form-item select {
-    background: rgba(26,26,62,0.73); color: #ddd; border-color: #3a3a5e;
-  }
-  .search-form .form-item input:focus,
-  .search-form .form-item select:focus { border-color: #1677ff; }
-  .search-form .form-item label { color: #aaa; }
-  .search-result-info { background: rgba(22,119,255,0.15); border-color: rgba(22,119,255,0.3); }
-  .note { background: rgba(250,173,20,0.1); border-color: rgba(250,173,20,0.3); color: #bbb; }
-  .modal-header { border-bottom-color: #2a2a4e; }
-  .modal-close:hover { background: #2a2a4e; color: #ddd; }
-  .highlight { background: rgba(250,173,20,0.3); }
-  .btn-group > div label { color: #aaa; }
-  #search-bar input { background: rgba(26,26,62,0.73); color: #ddd; border-color: #3a3a5e; }
 }
 
 /* 打印样式 */
@@ -494,7 +455,7 @@ const state = {
   currentData: [],
   filteredData: [],
   searchTerm: "",
-  sortColumn: "Stars",
+  sortColumn: "Weekly_Income",
   sortDirection: "desc",
   currentPage: 1,
   pageSize: 20,
@@ -532,7 +493,7 @@ async function doQuery() {
     state.filteredData = rows;
     state.searchTerm = "";
     document.getElementById("search-input").value = "";
-    state.sortColumn = "Stars";
+    state.sortColumn = "Weekly_Income";
     state.sortDirection = "desc";
     state.currentPage = 1;
 
@@ -905,16 +866,24 @@ function showAnalysis() {
   // ========== 第一部分：各星级实际分布 ==========
   const isMobile = window.innerWidth < 768;
   let html = `<h3 style="margin-bottom:12px;color:#1677ff;">📋 各星级实际分布</h3>`;
-  const maxCount = Math.max(...starStats.map(s => s.count), 1);
+  // 用于显示的计数：0星中排除周收入为0的公司
+  const displayCounts = starStats.map(stat => {
+    if (stat.star === 0 && stat.count > 0) {
+      const zeroWithIncome = starGroups[0].filter(c => c.Weekly_Income > 0).length;
+      return zeroWithIncome;
+    }
+    return stat.count;
+  });
+  const maxDisplayCount = Math.max(...displayCounts, 1);
 
   if (isMobile) {
     // 移动端简略版：卡片列表
     html += `<div class="mobile-star-list">`;
     for (let s = 10; s >= 0; s--) {
       const stat = starStatsMap.get(s);
-      const cnt = stat ? stat.count : 0;
+      const cnt = displayCounts[10 - s];
       const pct = stat ? stat.pct : 0;
-      const barWidth = Math.max((cnt / maxCount) * 80, cnt > 0 ? 2 : 0);
+      const barWidth = Math.max((cnt / maxDisplayCount) * 80, cnt > 0 ? 2 : 0);
       html += `<div class="mobile-star-row">
         <span class="stars-gold">${s}★</span>
         <span class="threshold-bar" style="width:${barWidth}px;height:6px;border-radius:3px;background:#1677ff;display:inline-block;vertical-align:middle;margin:0 6px;"></span>
@@ -932,16 +901,32 @@ function showAnalysis() {
       </thead><tbody>`;
     for (let s = 10; s >= 0; s--) {
       const stat = starStatsMap.get(s);
-      const cnt = stat ? stat.count : 0;
+      const cnt = displayCounts[10 - s];
       const pct = stat ? stat.pct : 0;
-      const barWidth = Math.max((cnt / maxCount) * 120, cnt > 0 ? 2 : 0);
+      const barWidth = Math.max((cnt / maxDisplayCount) * 120, cnt > 0 ? 2 : 0);
+      // 0星周收入范围用有收入的公司计算
+      let minWeekly = stat ? stat.minWeekly : 0;
+      let maxWeekly = stat ? stat.maxWeekly : 0;
+      let minDaily = stat ? stat.minDaily : 0;
+      let maxDaily = stat ? stat.maxDaily : 0;
+      if (s === 0 && starGroups[0] && starGroups[0].length > 0) {
+        const withIncome = starGroups[0].filter(c => c.Weekly_Income > 0);
+        if (withIncome.length > 0) {
+          const w = withIncome.map(c => c.Weekly_Income);
+          const d = withIncome.map(c => c.Daily_Income);
+          minWeekly = Math.min(...w); maxWeekly = Math.max(...w);
+          minDaily = Math.min(...d); maxDaily = Math.max(...d);
+        } else {
+          minWeekly = 0; maxWeekly = 0; minDaily = 0; maxDaily = 0;
+        }
+      }
       html += `<tr>
-        <td class="center"><span class="stars-gold">${"★".repeat(Math.min(s, 10))}</span> ${s}★</td>
+        <td class="center"><span class="stars-gold">${"★".repeat(Math.min(s, 10))}${"☆".repeat(10 - Math.min(s, 10))}</span> ${s}★</td>
         <td class="center">${cnt}</td>
         <td class="center">${pct.toFixed(1)}%</td>
         <td style="width:130px;"><span class="threshold-bar" style="width:${barWidth}px;"></span></td>
-        <td class="num">${cnt > 0 ? `$${stat.minWeekly.toLocaleString()} ~ $${stat.maxWeekly.toLocaleString()}` : "-"}</td>
-        <td class="num">${cnt > 0 ? `$${stat.minDaily.toLocaleString()} ~ $${stat.maxDaily.toLocaleString()}` : "-"}</td>
+        <td class="num">${cnt > 0 ? `$${minWeekly.toLocaleString()} ~ $${maxWeekly.toLocaleString()}` : "-"}</td>
+        <td class="num">${cnt > 0 ? `$${minDaily.toLocaleString()} ~ $${maxDaily.toLocaleString()}` : "-"}</td>
       </tr>`;
     }
     html += `</tbody></table>`;
@@ -984,10 +969,10 @@ function showAnalysis() {
       if (pt.thresholdWeekly === 0 && pt.quotaFrom > totalCount) continue;
       const s = pt.fromStar;
       const target = pt.toStar;
-      const targetStars = "★".repeat(Math.min(target, 10));
+      const targetStars = "★".repeat(Math.min(target, 10)) + "☆".repeat(10 - Math.min(target, 10));
       html += `<tr>
         <td class="center" style="font-weight:600;">
-          <span class="stars-gold">${"★".repeat(Math.min(s, 10))}</span> ${s}★
+          <span class="stars-gold">${"★".repeat(Math.min(s, 10))}${"☆".repeat(10 - Math.min(s, 10))}</span> ${s}★
           <span style="margin:0 4px;">→</span>
           <span class="stars-gold">${targetStars}</span> ${target}★
         </td>
