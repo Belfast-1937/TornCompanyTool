@@ -78,13 +78,6 @@ def _eff_of_state(state_tuple, p_stat_name, p_req, s_stat_name, s_req):
     )
 
 
-def _eff_of_state_int(state_tuple, p_stat_name, p_req, s_stat_name, s_req):
-    return calculate_efficiency_int(
-        {'MAN': state_tuple[0], 'INT': state_tuple[1], 'END': state_tuple[2]}[p_stat_name], p_req,
-        {'MAN': state_tuple[0], 'INT': state_tuple[1], 'END': state_tuple[2]}[s_stat_name], s_req,
-    )
-
-
 def _simulate_dp(emp, target_job, all_jobs, total_trains):
     """
     DP 全局最优（≤20次）。
@@ -144,10 +137,11 @@ def _simulate_dp(emp, target_job, all_jobs, total_trains):
     history = []
     stats = dict(init)
     for job_name, state_after in seq:
-        eff_before = _eff_of_state_int(
-            (stats['MAN'], stats['INT'], stats['END']), p_stat, p_req, s_stat, s_req)
+        eff_before = calculate_efficiency_int(
+            stats[p_stat], p_req, stats[s_stat], s_req)
         stats = {'MAN': state_after[0], 'INT': state_after[1], 'END': state_after[2]}
-        eff_after = _eff_of_state_int(state_after, p_stat, p_req, s_stat, s_req)
+        eff_after = calculate_efficiency_int(
+            stats[p_stat], p_req, stats[s_stat], s_req)
         history.append({
             'best_job': job_name,
             'eff_before': eff_before,

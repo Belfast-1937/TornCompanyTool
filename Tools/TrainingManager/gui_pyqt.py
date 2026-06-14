@@ -7,11 +7,11 @@ import threading
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
     QLabel, QComboBox, QLineEdit, QPushButton, QSpinBox,
-    QTableWidget, QTableWidgetItem, QHeaderView, QMessageBox,
-    QDialog, QDialogButtonBox
+    QTableWidget, QTableWidgetItem, QMessageBox,
+    QDialog,
 )
-from PySide6.QtCore import Qt, Signal, QObject
-from PySide6.QtGui import QPixmap, QPainter, QPalette, QBrush, QIcon
+from PySide6.QtCore import Signal, QObject
+from PySide6.QtGui import QIcon
 
 from constants import COMPANIES_DATA, SCRIPT_DIR
 from api_client import fetch_company_data, parse_employees, parse_company_type
@@ -20,7 +20,10 @@ from config import load_config, save_config, clear_config
 from report import generate_report
 
 
-_BG_PATH = "./background.png"
+# 编译打包开关
+# True  = 带背景图片 + 半透明控件样式（需 --add-data "background.png;."）
+# False = 纯色不透明控件样式
+ENABLE_BACKGROUND = False
 
 
 class _Signals(QObject):
@@ -110,18 +113,67 @@ class TrainingPlanDialog(QDialog):
         try:
             history = simulate_training_plan(self.emp, target_job, self.all_jobs, total)
 
-            self.result_table.setRowCount(len(history))
-            for i, step in enumerate(history):
-                st = step['stats']
-                self.result_table.setItem(i, 0, QTableWidgetItem(str(i + 1)))
-                self.result_table.setItem(i, 1, QTableWidgetItem(step['best_job']))
-                self.result_table.setItem(i, 2, QTableWidgetItem(str(step['eff_before'])))
-                self.result_table.setItem(i, 3, QTableWidgetItem(str(step['eff_after'])))
-                self.result_table.setItem(i, 4, QTableWidgetItem(
-                    f"+{step['gain']}" if step['gain'] >= 0 else str(step['gain'])))
-                self.result_table.setItem(i, 5, QTableWidgetItem(str(st['MAN'])))
-                self.result_table.setItem(i, 6, QTableWidgetItem(str(st['INT'])))
-                self.result_table.setItem(i, 7, QTableWidgetItem(str(st['END'])))
+            if total > 10:
+                # 聚合模式：按连续相同岗位合并
+                aggregated = []
+                cur_job = None
+                cur_first_eff = None
+                cur_last_step = None
+                cur_count = 0
+                for step in history:
+                    if step['best_job'] != cur_job:
+                        if cur_job is not None:
+                            aggregated.append({
+                                'count': cur_count,
+                                'job': cur_job,
+                                'eff_before': cur_first_eff,
+                                'eff_after': cur_last_step['eff_after'],
+                                'gain': cur_last_step['eff_after'] - cur_first_eff,
+                                'stats': cur_last_step['stats'],
+                            })
+                        cur_job = step['best_job']
+                        cur_first_eff = step['eff_before']
+                        cur_last_step = step
+                        cur_count = 1
+                    else:
+                        cur_last_step = step
+                        cur_count += 1
+                if cur_job is not None:
+                    aggregated.append({
+                        'count': cur_count,
+                        'job': cur_job,
+                        'eff_before': cur_first_eff,
+                        'eff_after': cur_last_step['eff_after'],
+                        'gain': cur_last_step['eff_after'] - cur_first_eff,
+                        'stats': cur_last_step['stats'],
+                    })
+
+                self.result_table.setRowCount(len(aggregated))
+                for i, agg in enumerate(aggregated):
+                    st = agg['stats']
+                    self.result_table.setItem(i, 0, QTableWidgetItem(f"x{agg['count']}次"))
+                    self.result_table.setItem(i, 1, QTableWidgetItem(agg['job']))
+                    self.result_table.setItem(i, 2, QTableWidgetItem(str(agg['eff_before'])))
+                    self.result_table.setItem(i, 3, QTableWidgetItem(str(agg['eff_after'])))
+                    self.result_table.setItem(i, 4, QTableWidgetItem(
+                        f"+{agg['gain']}" if agg['gain'] >= 0 else str(agg['gain'])))
+                    self.result_table.setItem(i, 5, QTableWidgetItem(str(st['MAN'])))
+                    self.result_table.setItem(i, 6, QTableWidgetItem(str(st['INT'])))
+                    self.result_table.setItem(i, 7, QTableWidgetItem(str(st['END'])))
+            else:
+                # ≤10次：逐行显示
+                self.result_table.setRowCount(len(history))
+                for i, step in enumerate(history):
+                    st = step['stats']
+                    self.result_table.setItem(i, 0, QTableWidgetItem(str(i + 1)))
+                    self.result_table.setItem(i, 1, QTableWidgetItem(step['best_job']))
+                    self.result_table.setItem(i, 2, QTableWidgetItem(str(step['eff_before'])))
+                    self.result_table.setItem(i, 3, QTableWidgetItem(str(step['eff_after'])))
+                    self.result_table.setItem(i, 4, QTableWidgetItem(
+                        f"+{step['gain']}" if step['gain'] >= 0 else str(step['gain'])))
+                    self.result_table.setItem(i, 5, QTableWidgetItem(str(st['MAN'])))
+                    self.result_table.setItem(i, 6, QTableWidgetItem(str(st['INT'])))
+                    self.result_table.setItem(i, 7, QTableWidgetItem(str(st['END'])))
         except Exception as e:
             QMessageBox.critical(self, "规划失败", f"发生错误：{str(e)}")
         finally:
@@ -170,40 +222,81 @@ class TrainingPlannerApp(QMainWindow):
     # ---- 背景 ----
 
     def _apply_background(self):
-        """设置背景图片，表格透明，控件半透明。"""
-        widget_style = """
-            QTableWidget {
-                background-color: rgba(255, 255, 255, 160);
-                border: 1px solid #ccc;
-                gridline-color: #aaa;
-            }
-            QHeaderView {
-                background-color: rgba(255, 255, 255, 160);
-            }
-            QLabel {
-                background-color: transparent;
-                border: none;
-            }
-            QPushButton, QComboBox, QLineEdit {
-                background-color: rgba(255, 255, 255, 220);
-                border: 1px solid #aaa;
-            }
-            QPushButton {
-                padding: 4px 12px;
-            }
+        """根据 ENABLE_BACKGROUND 开关设置样式。
+
+        True  = 带背景图片 + 半透明控件（PyInstaller 打包后从 _MEIPASS 查找）
+        False = 纯色不透明控件样式
         """
-        if os.path.isfile(_BG_PATH):
-            bg_url = _BG_PATH.replace("\\", "/")
-            self.setStyleSheet(f"""
-                QMainWindow {{
-                    background-image: url({bg_url});
-                    background-repeat: no-repeat;
-                    background-position: center;
-                }}
-                {widget_style}
-            """)
+        if ENABLE_BACKGROUND:
+            # 半透明样式
+            widget_style = """
+                QTableWidget {
+                    background-color: rgba(255, 255, 255, 160);
+                    border: 1px solid #ccc;
+                    gridline-color: #aaa;
+                }
+                QHeaderView {
+                    background-color: rgba(255, 255, 255, 160);
+                }
+                QLabel {
+                    background-color: transparent;
+                    border: none;
+                }
+                QPushButton, QComboBox, QLineEdit {
+                    background-color: rgba(255, 255, 255, 220);
+                    border: 1px solid #aaa;
+                }
+                QPushButton {
+                    padding: 4px 12px;
+                }
+            """
+            # 搜索 background.png（兼容 PyInstaller 打包）
+            bg_path = None
+            if getattr(sys, 'frozen', False):
+                base_dirs = [sys._MEIPASS, SCRIPT_DIR]
+            else:
+                base_dirs = [SCRIPT_DIR]
+            for base in base_dirs:
+                candidate = os.path.join(base, "background.png")
+                if os.path.isfile(candidate):
+                    bg_path = candidate
+                    break
+
+            if bg_path:
+                bg_url = bg_path.replace("\\", "/")
+                self.setStyleSheet(f"""
+                    QMainWindow {{
+                        background-image: url({bg_url});
+                        background-repeat: no-repeat;
+                        background-position: center;
+                    }}
+                    {widget_style}
+                """)
+            else:
+                self.setStyleSheet(widget_style)
         else:
-            self.setStyleSheet(widget_style)
+            # 纯色不透明样式
+            self.setStyleSheet("""
+                QTableWidget {
+                    background-color: #ffffff;
+                    border: 1px solid #ccc;
+                    gridline-color: #aaa;
+                }
+                QHeaderView {
+                    background-color: #ffffff;
+                }
+                QLabel {
+                    background-color: transparent;
+                    border: none;
+                }
+                QPushButton, QComboBox, QLineEdit {
+                    background-color: #f5f5f5;
+                    border: 1px solid #aaa;
+                }
+                QPushButton {
+                    padding: 4px 12px;
+                }
+            """)
 
     # ---- UI 构建 ----
 
@@ -281,20 +374,36 @@ class TrainingPlannerApp(QMainWindow):
         self.table.verticalHeader().setDefaultSectionSize(26)
         self.table.itemSelectionChanged.connect(self._on_table_selection_changed)
         # 选中行高亮样式
-        self.table.setStyleSheet("""
-            QTableWidget {
-                background-color: rgba(255, 255, 255, 160);
-                border: 1px solid #ccc;
-                gridline-color: #aaa;
-            }
-            QTableWidget::item:selected {
-                background-color: #3399ff;
-                color: white;
-            }
-            QHeaderView::section {
-                background-color: rgba(255, 255, 255, 160);
-            }
-        """)
+        if ENABLE_BACKGROUND:
+            self.table.setStyleSheet("""
+                QTableWidget {
+                    background-color: rgba(255, 255, 255, 160);
+                    border: 1px solid #ccc;
+                    gridline-color: #aaa;
+                }
+                QTableWidget::item:selected {
+                    background-color: #3399ff;
+                    color: white;
+                }
+                QHeaderView::section {
+                    background-color: rgba(255, 255, 255, 160);
+                }
+            """)
+        else:
+            self.table.setStyleSheet("""
+                QTableWidget {
+                    background-color: #ffffff;
+                    border: 1px solid #ccc;
+                    gridline-color: #aaa;
+                }
+                QTableWidget::item:selected {
+                    background-color: #3399ff;
+                    color: white;
+                }
+                QHeaderView::section {
+                    background-color: #ffffff;
+                }
+            """)
         root_layout.addWidget(self.table, 1)
 
         # ===== 底部 =====
