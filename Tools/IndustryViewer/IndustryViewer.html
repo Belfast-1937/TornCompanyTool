@@ -643,7 +643,7 @@ function renderTable() {
       } else if (c.isName) {
         const escaped = escapeHtml(val);
         const display = highlightInEscaped(escaped, state.searchTerm);
-        tbodyHtml += `<td><a href="https://www.torn.com/company/${row.CompanyID}" target="_blank" rel="noopener">${display}</a></td>`;
+        tbodyHtml += `<td><a href="https://www.torn.com/joblist.php#!p=corpinfo&ID=${row.CompanyID}" target="_blank" rel="noopener">${display}</a></td>`;
       } else if (c.isDirector) {
         const escaped = escapeHtml(val);
         const display = highlightInEscaped(escaped, state.searchTerm);
